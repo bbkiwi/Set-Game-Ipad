@@ -9,7 +9,16 @@ import itertools
 
 A = Action
 
-DEBUG = False
+DEBUG_LEVEL = 0 # max level to show
+console.clear()
+print('DEBUG LEVEL ', DEBUG_LEVEL)
+
+def dbPrint(*args, level=1):
+    if level > DEBUG_LEVEL:
+        return
+    print(level*' ','LINE:',sys._getframe().f_back.f_lineno, *args)
+
+#TODO get ride of these global vars
 Ninitial = 12 # initial deal
 Ndeal = 3 # auto and manual deal size when no sets left
 Nc = 3
@@ -39,7 +48,7 @@ sfac['SPEED'] = 1
 
 # called from menu gui setsolitaire.pyui
 def input_action(sender):
-    print('sender.name {} sender.value {}'.format(sender.name, sender.value))
+    dbPrint('sender.name {} sender.value {}'.format(sender.name, sender.value))
     # get global params that are in the gui and update corresponding text if exists
     # eg if key is 'PAR_XX' the gui input slider etc must have name PAR_XX
     #.          a text box named par_xx_text will be populated with par_xx: nnnnn
@@ -60,7 +69,7 @@ def input_action(sender):
     #print(sender.superview['MENU'].segments[sender.superview['MENU'].selected_index])
 
 
-console.clear()
+# Backend with 'cards' just list of the 4 atribute values
 
 def makeDeck(colorSlice = (0,3,1), numberSlice = (0,3,1), shapeSlice=(0,3,1),shadeSlice=(0,3,1)):
     # card has 4 properties each with 3 states
@@ -173,6 +182,7 @@ def findBestSet(deal, deck):
         #print(" best {} goodness {}".format(sbest, sbestgoodness))
         return sbest
 
+####### functions for drawing shape paths
 
 width = 120
 height = 180
@@ -278,6 +288,8 @@ diamondPath3.eo_fill_rule = True
 
 diamondPaths = [diamondPath1, diamondPath2, diamondPath3]
 
+####################
+
 cardShapes = {
     'diamonds': diamondPaths,
     'ovals': ovalPaths,
@@ -298,8 +310,6 @@ class Card(Node):
         # is next needed, doesnt seem to make difference
         Node.__init__(self, *args, **kwargs)
 
-
-
         if x==None:
             for posInd, fp in enumerate(freePositions):
                 if fp:
@@ -314,10 +324,8 @@ class Card(Node):
             self.posInd = posInd
 
         self.position = (x, y)
-
         self.x = x
         self.y = y
-
         self.color = color
         self.number = number
         self.shape = shape
@@ -351,15 +359,13 @@ class Card(Node):
         self.add_child(outline)
         self.add_child(cardShape)
 
-    #    update(self), run_action(self, A, key), remove_action(self, key) all builtin methods
-    #    no need to over ride
-
 
 class MyScene(Scene):
     def setup(self):
         self.background_color = (0, 0, .5)
         self.v = None
         self.INPUT_ACTION_TAKEN = False
+        # set up all permanent nodes and subnodes
         self.buttonParmPopup = ShapeNode(
             ui.Path.rect(0, 0, 50, 50),
             position=(625, 25),
@@ -409,34 +415,29 @@ class MyScene(Scene):
         self.dealLabel = LabelNode('', color='yellow', parent=self.dealInfo)
         self.dealLabel.anchor_point = (0, 5)
 
-#        self.setsFound = Node(position=(800, 650), parent=self)
-#        self.setsFound.x_scale = .2
-#        self.setsFound.y_scale = .2
-
         ws = ui.get_window_size()
         self.setsFound = Node(position=(0, ws[1]), parent=self)
-        #self.setsFound.x_scale = .2
-        #self.setsFound.y_scale = .2
 
-        self.cardsOnTable = []
+        # save number of permanent nodes
         self.numChildrenSetup = len(self.children)
 
         self.start()
 
     def start(self):
-        # clean up all added card nodes and free their positions
+        # remove added card nodes and free their positions
         for node in self.children[self.numChildrenSetup:]:
             freePositions[node.posInd] = True
             node.remove_from_parent()
+
+        # clear out self.setsFound
+        for child in self.setsFound.children:
+            child.remove_from_parent()
 
         self.numCorrectSets = 0
         self.numBadSets = 0
         self.numCorrectDeals = Ninitial
         self.numBadDeals = 0
         self.numAuto = 0
-
-        for c in self.setsFound.children:
-            c.remove_from_parent()
 
         ws = ui.get_window_size()
         self.xDisp = self.xDispCol =  ws[0] - 225
@@ -448,18 +449,19 @@ class MyScene(Scene):
         self.cardsLeft = []
         self.setsDisplayed = []
 
-
+        # make backend deck
         if parm['EASY']:
             self.deck = makeDeck(shadeSlice=(2,3,1))
         else:
             self.deck = makeDeck()
 
+        # make backend initial deal
         self.deal = makeDeal(self.deck)
         #print(self.deal)
         self.deckLabel.text = checkDeck(self.deck)
         self.dealLabel.text = checkDeck(self.deal)
 
-        # draw card nodes of deal in grid
+        # create and draw card nodes of deal in grid
         for cardData in self.deal:
             ctmp = Card(None, None, *cardData)
             #print(ctmp.position)
@@ -487,11 +489,31 @@ class MyScene(Scene):
 
 
     def autoPlay(self):
-        bestSetData = findBestSet(self.deal, self.deck)
+        if parm['REMOVE']:
+            bestSetData = findBestSet(self.deal, self.deck)
+        else:
+            allSets = findSets(self.deal)
+            dbPrint(allSets, level=3)
+            dbPrint('sd ',self.setsDisplayed)
+            dbPrint('cardsOnTable ', self.cardsOnTable, level=3)
+            for bestSetData in allSets:
+                dbPrint(bestSetData, level=3)
+                setSelected = {card for card in self.cardsOnTable if [card.color, card.number, card.shape, card.shade] in bestSetData}
+                dbPrint('setsel ',setSelected)
+                if setSelected not in self.setsDisplayed:
+                    break
+            else:
+                self.message.text = 'All Sets Found'
+                self.startNextTouch = True
+                return
+                bestSetData = []
+
         self.setAutoFound = []
         self.cardsLeft = []
-        if len(bestSetData) == 3:  # a set so remove from table and continue
-            print(bestSetData)
+        if len(bestSetData) == 3:
+            # a set so add its card nodes to setAutoFound
+            # remove the backend card data from deal if remove option
+            #print(bestSetData)
             for node in self.children[self.numChildrenSetup:]:
                 if [node.color, node.number, node.shape,
                         node.shade] in bestSetData:
@@ -506,11 +528,11 @@ class MyScene(Scene):
                     node.x_scale = .5
                     node.y_scale = .5
                     self.cardsLeft.append(node)
-            print([[[node.color, node.number, node.shape,
-                        node.shade] for node in self.setAutoFound]])
-            #self.dispFound([bestSetData])
-            #self.dispFound2(self.setAutoFound)
-            removeCardsInSet(bestSetData, self.deal)
+            #print([[[node.color, node.number, node.shape,
+                       # node.shade] for node in self.setAutoFound]])
+            if parm['REMOVE']:
+                removeCardsInSet(bestSetData, self.deal)
+
         else:  # no more sets on table, add new cards from deck
             if len(self.deck) != 0:
                 #NdealNow = Ndeal):
@@ -523,13 +545,13 @@ class MyScene(Scene):
                     self.cardsOnTable.append(ctmp)
 
     def dispFound2(self, allSetsCards):
-        print(allSetsCards)
+        #print('line 544', allSetsCards)
         self.setsDisplayed.append(set(allSetsCards))
-        print(self.setsDisplayed)
+        #print(self.setsDisplayed)
         for card in allSetsCards:
             if parm['REMOVE']:
                 card.remove_from_parent()
-            print(*card.position)
+            #print(*card.position)
             ctmp = Card(*self.setsFound.point_from_scene(card.position),
                     card.color, card.number, card.shape, card.shade)
             self.setsFound.add_child(ctmp)
@@ -545,9 +567,9 @@ class MyScene(Scene):
             self.yDisp = -150
         self.xDisp = self.xDispCol
 
-
+    #TODO fix to take nodes making sets
     def dispFound(self, allSets):
-        print(allSets)
+        dbPrint(allSets)
         for setData in allSets:
             #print(set)
             for cardData in setData:
@@ -578,9 +600,6 @@ class MyScene(Scene):
 
         #print(self.t)
 
-
-
-
         if self.startNextTouch:
             self.start()
             return
@@ -590,45 +609,32 @@ class MyScene(Scene):
             #for node in self.cardsOnTable:
             for node in self.cardsLeft:
                 # restore cards made smaller during auto play
-                #node.alpha = 1
-                #node.x_scale = 1
-                #node.y_scale = 1
                 node.remove_all_actions()
                 node.run_action(A.scale_to(1, 3))
-                pass
 
-
-        for node in self.setAutoFound:
-            print(node.position, self.setsFound.point_from_scene(node.position))
-            self.cardsOnTable.remove(node)
-            freePositions[node.posInd] = True
-            #node.remove_from_parent()
-#            node.remove_all_actions()
-#            node.run_action(A.sequence(
-#                                    A.group(
-#                                    A.scale_to(0.2, 3),
-#                                    A.move_to(*self.setsFound.point_to_scene((self.xDisp, self.yDisp)), 3,                 TIMING_EASE_IN),
-#                                    A.call(self.dispFoundAction,3)),
-#                                    A.remove() # seems to remove  from parent
-#                                    ))
-
+            for node in self.setAutoFound:
+                #print(node.position, self.setsFound.point_from_scene(node.position))
+                if parm['REMOVE']:
+                    self.cardsOnTable.remove(node)
+                freePositions[node.posInd] = True
+                #node.remove_from_parent()
 
         self.setAutoFound = []
 
+
+        # Assertion check
         # this should never be true so raise exception if occurrs
         if [[c.color, c.number, c.shape, c.shade] for c in self.cardsOnTable] != self.deal:
             print('*', len(self.deal), len(self.cardsOnTable))
             print(self.deal)
             print([[c.color, c.number, c.shape, c.shade] for c in self.cardsOnTable])
-            raise Exception
-
-
+            raise AssertionError
 
         # touched found set button
         if touch.location in self.buttonSet.frame:
             self.buttonSet.fill_color = 'yellow'
             self.userCalledSet = True
-            return
+            #return
 
         # touched change settings button
         if touch.location in self.buttonParmPopup.frame:
@@ -638,7 +644,7 @@ class MyScene(Scene):
                 for pn in paramnames:
                     #self.v[pn].value = parm[pn] / sfac[pn]
                     self.v[pn].value = parm[pn]
-                    print(pn, parm[pn])
+                    dbPrint(pn, parm[pn])
                 self.v.background_color = '#5564ff'
                 self.v.tint_color = '#12ff26'
 
@@ -686,6 +692,7 @@ class MyScene(Scene):
 
         if touch.location in self.buttonAllAuto.bbox:
             self.numAuto += 1
+            #TODO find nodes that correspond to cards in sets
             self.dispFound(findSets(self.deal))
             self.dealLabel.text = checkDeck(self.deal)
             self.deckLabel.text = checkDeck(self.deck)
@@ -791,7 +798,7 @@ class MyScene(Scene):
         #                               TIMING_SINODIAL), 'move_action_key')
 
         #self.cardTouched.remove_action('move_action_key')
-        print(self.userCalledSet)
+        #print(self.userCalledSet)
         if (self.cardTouched != None) & (not self.userCalledSet):
             #pass
             self.cardTouched.x_scale = 1
