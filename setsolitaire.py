@@ -285,7 +285,7 @@ cardShapes = {
 
 #print(diamondPaths, ovalPaths, squigglePaths)
 
-# TODO how to make non global?
+#TODO how to make non global?
 posPositions = [(x, y) for y in range(3)
                 for x in range(4)] + [(x, y)
                                       for x in range(4, 8) for y in range(3)]
@@ -408,9 +408,14 @@ class MyScene(Scene):
         self.dealLabel = LabelNode('', color='yellow', parent=self.dealInfo)
         self.dealLabel.anchor_point = (0, 5)
 
-        self.setsFound = Node(position=(800, 650), parent=self)
-        self.setsFound.x_scale = .2
-        self.setsFound.y_scale = .2
+#        self.setsFound = Node(position=(800, 650), parent=self)
+#        self.setsFound.x_scale = .2
+#        self.setsFound.y_scale = .2
+
+        ws = ui.get_window_size()
+        self.setsFound = Node(position=(0, ws[1]), parent=self)
+        #self.setsFound.x_scale = .2
+        #self.setsFound.y_scale = .2
 
         self.cardsOnTable = []
         self.numChildrenSetup = len(self.children)
@@ -418,40 +423,43 @@ class MyScene(Scene):
         self.start()
 
     def start(self):
+        # clean up all added card nodes and free their positions
+        for node in self.children[self.numChildrenSetup:]:
+            freePositions[node.posInd] = True
+            node.remove_from_parent()
 
         self.numCorrectSets = 0
         self.numBadSets = 0
         self.numCorrectDeals = Ninitial
         self.numBadDeals = 0
         self.numAuto = 0
+
         for c in self.setsFound.children:
             c.remove_from_parent()
 
+        ws = ui.get_window_size()
+        self.xDisp = self.xDispCol =  ws[0] - 225
+        self.yDisp = -150
+
         self.startNextTouch = False
+        self.cardsOnTable = []
+        self.setAutoFound = []
+        self.cardsLeft = []
 
-        for c in self.cardsOnTable:
-            freePositions[c.posInd] = True
-            c.remove_from_parent()
-
-        self.xDisp = self.yDisp = 0
-        self.xDispCol = 0
 
         if parm['EASY']:
             self.deck = makeDeck(shadeSlice=(2,3,1))
         else:
             self.deck = makeDeck()
+
         self.deal = makeDeal(self.deck)
         #print(self.deal)
         self.deckLabel.text = checkDeck(self.deck)
         self.dealLabel.text = checkDeck(self.deal)
 
-        # draw cards of deal in grid
-        self.cardsOnTable = []
-        self.setAutoFound = []
-        self.cardsLeft = []
-
-        for card in self.deal:
-            ctmp = Card(None, None, *card)
+        # draw card nodes of deal in grid
+        for cardData in self.deal:
+            ctmp = Card(None, None, *cardData)
             #print(ctmp.position)
             self.add_child(ctmp)
             self.cardsOnTable.append(ctmp)
@@ -459,8 +467,7 @@ class MyScene(Scene):
         # FIX only for the initial deal!
         for i, subnode in enumerate(self.children):
             subnode.z_position = -i
-        #self.card.remove_from_parent()
-        #print(self.children[self.numChildrenSetup:])
+
         self.cardTouched = None
         self.buttonTouchId = None
         self.userCalledSet = False
@@ -478,14 +485,14 @@ class MyScene(Scene):
 
 
     def autoPlay(self):
-        bestSet = findBestSet(self.deal, self.deck)
+        bestSetData = findBestSet(self.deal, self.deck)
         self.setAutoFound = []
         self.cardsLeft = []
-        if len(bestSet) == 3:  # a set so remove from table and continue
-            print(bestSet)
+        if len(bestSetData) == 3:  # a set so remove from table and continue
+            print(bestSetData)
             for node in self.children[self.numChildrenSetup:]:
                 if [node.color, node.number, node.shape,
-                        node.shade] in bestSet:
+                        node.shade] in bestSetData:
                     #node.x_scale = 1.2
                     #node.y_scale = 1.2
                     #node.z_position = 10
@@ -498,30 +505,32 @@ class MyScene(Scene):
                     node.y_scale = .5
                     self.cardsLeft.append(node)
 
-            self.dispFound([bestSet])
-            removeCardsInSet(bestSet, self.deal)
+            self.dispFound([bestSetData])
+            removeCardsInSet(bestSetData, self.deal)
         else:  # no more sets on table, add new cards from deck
             if len(self.deck) != 0:
                 #NdealNow = Ndeal):
                 NdealNow = min(len(self.deck), max(Ndeal, Ninitial - len(self.deal)))
                 for i in range(NdealNow):
-                    newCard = dealCard(self.deck)
-                    self.deal.append(newCard)
-                    ctmp = Card(None, None, *newCard)
+                    newCardData = dealCard(self.deck)
+                    self.deal.append(newCardData)
+                    ctmp = Card(None, None, *newCardData)
                     self.add_child(ctmp)
                     self.cardsOnTable.append(ctmp)
 
     def dispFound(self, allSets):
-        for set in allSets:
+        for setData in allSets:
             #print(set)
-            for card in set:
-                ctmp = Card(self.xDisp, self.yDisp, *card)
+            for cardData in setData:
+                ctmp = Card(self.xDisp, self.yDisp, *cardData)
+                ctmp.x_scale = .2
+                ctmp.y_scale = .2
                 self.setsFound.add_child(ctmp)
-                self.xDisp += width
-            self.yDisp -= height+10
-            if self.yDisp <= -15*(height+10):
-                self.xDispCol += 10+3*width
-                self.yDisp = 0
+                self.xDisp += .2*width
+            self.yDisp -= 0.2*height+2
+            if self.yDisp <= -3*(height+2) - 150:
+                self.xDispCol += 5+3*0.2*width
+                self.yDisp = -150
             self.xDisp = self.xDispCol
 
     def update(self):
