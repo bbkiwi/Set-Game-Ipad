@@ -21,7 +21,8 @@ parm = dict( # of all parameters that can be specified in the gui
     #RING_SIZE = 100, # 30
     SPEED = 0,
     EASY = True,
-    MENU = "rerdogrr"
+    REMOVE = False,
+    MENU = "A"
 )
 
 
@@ -31,7 +32,7 @@ class scalefactor(dict):
 
 sfac = scalefactor()
 
-paramnames = ['SPEED', 'EASY', 'MENU']
+paramnames = ['SPEED', 'EASY', 'MENU', 'REMOVE']
 
 sfac['SPEED'] = 1
 
@@ -445,6 +446,7 @@ class MyScene(Scene):
         self.cardsOnTable = []
         self.setAutoFound = []
         self.cardsLeft = []
+        self.setsDisplayed = []
 
 
         if parm['EASY']:
@@ -504,8 +506,10 @@ class MyScene(Scene):
                     node.x_scale = .5
                     node.y_scale = .5
                     self.cardsLeft.append(node)
-
-            self.dispFound([bestSetData])
+            print([[[node.color, node.number, node.shape,
+                        node.shade] for node in self.setAutoFound]])
+            #self.dispFound([bestSetData])
+            #self.dispFound2(self.setAutoFound)
             removeCardsInSet(bestSetData, self.deal)
         else:  # no more sets on table, add new cards from deck
             if len(self.deck) != 0:
@@ -518,14 +522,42 @@ class MyScene(Scene):
                     self.add_child(ctmp)
                     self.cardsOnTable.append(ctmp)
 
+    def dispFound2(self, allSetsCards):
+        print(allSetsCards)
+        self.setsDisplayed.append(set(allSetsCards))
+        print(self.setsDisplayed)
+        for card in allSetsCards:
+            if parm['REMOVE']:
+                card.remove_from_parent()
+            print(*card.position)
+            ctmp = Card(*self.setsFound.point_from_scene(card.position),
+                    card.color, card.number, card.shape, card.shade)
+            self.setsFound.add_child(ctmp)
+            ctmp.run_action(A.sequence(
+                                    A.group(
+                                    A.scale_to(0.2, 3),
+                                    A.move_to(self.xDisp, self.yDisp, 3, TIMING_EASE_IN)
+                                    )))
+            self.xDisp += .2*width
+        self.yDisp -= 0.2*height+2
+        if self.yDisp <= -3*(height+2) - 150:
+            self.xDispCol += 5+3*0.2*width
+            self.yDisp = -150
+        self.xDisp = self.xDispCol
+
+
     def dispFound(self, allSets):
+        print(allSets)
         for setData in allSets:
             #print(set)
             for cardData in setData:
                 ctmp = Card(self.xDisp, self.yDisp, *cardData)
-                ctmp.x_scale = .2
-                ctmp.y_scale = .2
                 self.setsFound.add_child(ctmp)
+                ctmp.run_action(A.sequence(
+                                    A.group(
+                                    A.scale_to(0.2, 3),
+                                    A.move_to(self.xDisp, self.yDisp, 3, TIMING_EASE_IN)
+                                    )))
                 self.xDisp += .2*width
             self.yDisp -= 0.2*height+2
             if self.yDisp <= -3*(height+2) - 150:
@@ -554,7 +586,9 @@ class MyScene(Scene):
             return
 
         if len(self.setAutoFound) > 0: # in autoplay
-            for node in self.cardsOnTable:
+            self.dispFound2(self.setAutoFound)
+            #for node in self.cardsOnTable:
+            for node in self.cardsLeft:
                 # restore cards made smaller during auto play
                 #node.alpha = 1
                 #node.x_scale = 1
@@ -569,14 +603,15 @@ class MyScene(Scene):
             self.cardsOnTable.remove(node)
             freePositions[node.posInd] = True
             #node.remove_from_parent()
-            node.remove_all_actions()
-            node.run_action(A.sequence(
-                                    A.group(
-                                    A.scale_to(0.2, 3),
-                                    A.move_to(*self.setsFound.point_to_scene((self.xDisp, self.yDisp)), 3,                 TIMING_EASE_IN),
-                                    A.call(self.dispFoundAction,3)),
-                                    A.remove() # seems to remove  from parent
-                                    ))
+#            node.remove_all_actions()
+#            node.run_action(A.sequence(
+#                                    A.group(
+#                                    A.scale_to(0.2, 3),
+#                                    A.move_to(*self.setsFound.point_to_scene((self.xDisp, self.yDisp)), 3,                 TIMING_EASE_IN),
+#                                    A.call(self.dispFoundAction,3)),
+#                                    A.remove() # seems to remove  from parent
+#                                    ))
+
 
         self.setAutoFound = []
 
@@ -679,7 +714,7 @@ class MyScene(Scene):
                         (self.cardTouched not in self.userCardsSelected)):
                         self.userCardsSelected.append(self.cardTouched)
                         #print(self.userCardsSelected)
-                    if len(self.userCardsSelected) == 3:
+                    if (len(self.userCardsSelected) == 3):
                         if len(
                                 findSets([[
                                     c.color, c.number, c.shape, c.shade
@@ -687,7 +722,7 @@ class MyScene(Scene):
                             # not a set, make noise subtract penalty etc
                             play_effect('game:Error')
                             self.buttonSet.fill_color = 'red'
-                            self.userCalledSet = False
+                            #self.userCalledSet = False
                             for c in self.userCardsSelected:
                                 c.remove_all_actions()
                                 c.run_action(A.sequence(
@@ -698,63 +733,48 @@ class MyScene(Scene):
                                     #A.remove()
                                     ))
                                 #c.x_scale = 1
-                            self.userCardsSelected = []
+                            #self.userCardsSelected = []
                             self.numBadSets += 1
-                        elif True:
+                        elif parm['REMOVE']: # working ok
                             # found set, remove cards from deck
                             # make nice sound
                             play_effect('digital:PowerUp1')
                             self.numCorrectSets += 1
                             self.buttonSet.fill_color = 'green'
-                            self.userCalledSet = False
+                            #self.userCalledSet = False
 
-                            self.dispFound([[[c.color, c.number, c.shape, c.shade]
-                                 for c in self.userCardsSelected]])
+                            #self.dispFound([[[c.color, c.number, c.shape, c.shade]
+                                 #for c in self.userCardsSelected]])
+                            self.dispFound2(self.userCardsSelected)
                             removeCardsInSet(
                                 [[c.color, c.number, c.shape, c.shade]
                                  for c in self.userCardsSelected], self.deal)
                             self.dealLabel.text = checkDeck(self.deal)
                             for c in self.userCardsSelected:
                                 freePositions[c.posInd] = True
-                                #c.remove_from_parent()
                                 self.cardsOnTable.remove(c)
-                                c.remove_all_actions()
-                                c.run_action(A.sequence(
-                                    A.group(
-                                    A.scale_to(0.2, 3),
-                                    A.move_to(*self.setsFound.point_to_scene((self.xDisp, self.yDisp)), 3,                 TIMING_EASE_IN)),
-                                    A.remove() # seems to remove c from parent
-                                    ))
-                            self.userCardsSelected = []
+                                c.remove_from_parent()
+
+                            #self.userCardsSelected = []
                         else:
-                            # found set but dont remove
-                            # make nice sound
-                            play_effect('digital:PowerUp1')
-                            self.numCorrectSets += 1
-                            self.buttonSet.fill_color = 'green'
-                            self.userCalledSet = False
-
-                            self.dispFound([[[c.color, c.number, c.shape, c.shade]
-                                 for c in self.userCardsSelected]])
-
-                            self.dealLabel.text = checkDeck(self.deal)
+                            if  set(self.userCardsSelected) not in self.setsDisplayed:
+                                # found new set but dont remove
+                                # make nice sound
+                                play_effect('digital:PowerUp1')
+                                self.numCorrectSets += 1
+                                self.buttonSet.fill_color = 'green'
+                                #self.userCalledSet = False
+                                self.dispFound2(self.userCardsSelected)
+                                self.dealLabel.text = checkDeck(self.deal)
+                            else:
+                                play_effect('arcade:Jump_4')
+                                self.buttonSet.fill_color = 'red'
                             for c in self.userCardsSelected:
-                                #freePositions[c.posInd] = True
-                                #c.remove_from_parent()
-                                #self.cardsOnTable.remove(c)
-                                c.remove_all_actions()
-                                c.run_action(A.sequence(
-                                    A.group(
-                                    A.scale_to(0.2, 3),
-                                    A.move_to(*self.setsFound.point_to_scene((self.xDisp, self.yDisp)), 3,                 TIMING_EASE_IN)),
-                                    ))
-                            self.userCardsSelected = []
-                            #print(len(findSets(self.deal)))
-                            #if (len(self.deck) == 0) & (len(findSets(self.deal)) == 0):
-                                ## deck empty end game but cards left in deal
-                                #self.message.text = 'Game Over\n after found last set'
-                                #self.startNextTouch = True
-                                ##return
+                                #c.remove_all_actions()
+                                c.run_action(A.scale_x_to(1))
+
+                        self.userCardsSelected = []
+                        self.userCalledSet = False
                 break
         self.score.text = "{} Correct Set Calls, {} Incorrect, {} Good Deals, {} Premature {} Auto".format(
             self.numCorrectSets, self.numBadSets, self.numCorrectDeals,
