@@ -27,7 +27,6 @@ Nsh = 3
 
 parm = dict( # of all parameters that can be specified in the gui
     #SOUND_ON = True,
-    #RING_SIZE = 100, # 30
     SPEED = 0,
     EASY = True,
     REMOVE = False,
@@ -349,15 +348,16 @@ class Card(Node):
 
         #print(cardShapes[shape][number - 1])
 
-        cardShape = ShapeNode(
+        self.cardShape = ShapeNode(
             path=cardShapes[shape][number - 1], *args, **kwargs)
-        cardShape.stroke_color = color
+        self.cardShape.stroke_color = color
+        self.cardShape.fill_color = 'white' #'#fbff9b'
         #cardShape.remove_from_parent()
         #outline.remove_from_parent()
 
         self.add_child(shading)
         self.add_child(outline)
-        self.add_child(cardShape)
+        self.add_child(self.cardShape)
 
 
 class MyScene(Scene):
@@ -530,12 +530,13 @@ class MyScene(Scene):
                     self.cardsLeft.append(node)
             #print([[[node.color, node.number, node.shape,
                        # node.shade] for node in self.setAutoFound]])
+            self.numAuto += 1
             if parm['REMOVE']:
                 removeCardsInSet(bestSetData, self.deal)
 
         else:  # no more sets on table, add new cards from deck
             if len(self.deck) != 0:
-                #NdealNow = Ndeal):
+                #NdealNow = Ndeal
                 NdealNow = min(len(self.deck), max(Ndeal, Ninitial - len(self.deal)))
                 for i in range(NdealNow):
                     newCardData = dealCard(self.deck)
@@ -544,7 +545,7 @@ class MyScene(Scene):
                     self.add_child(ctmp)
                     self.cardsOnTable.append(ctmp)
 
-    def dispFound2(self, allSetsCards):
+    def dispFound2(self, allSetsCards, auto=False):
         #print('line 544', allSetsCards)
         self.setsDisplayed.append(set(allSetsCards))
         #print(self.setsDisplayed)
@@ -554,6 +555,8 @@ class MyScene(Scene):
             #print(*card.position)
             ctmp = Card(*self.setsFound.point_from_scene(card.position),
                     card.color, card.number, card.shape, card.shade)
+            if auto:
+                ctmp.cardShape.fill_color = '#dee5e6'
             self.setsFound.add_child(ctmp)
             ctmp.run_action(A.sequence(
                                     A.group(
@@ -605,7 +608,7 @@ class MyScene(Scene):
             return
 
         if len(self.setAutoFound) > 0: # in autoplay
-            self.dispFound2(self.setAutoFound)
+            self.dispFound2(self.setAutoFound, auto=True)
             #for node in self.cardsOnTable:
             for node in self.cardsLeft:
                 # restore cards made smaller during auto play
@@ -700,7 +703,6 @@ class MyScene(Scene):
             self.startNextTouch = True
 
         if touch.location in self.buttonAuto.bbox:
-            self.numAuto += 1
             self.autoPlay()
             self.dealLabel.text = checkDeck(self.deal)
             self.deckLabel.text = checkDeck(self.deck)
