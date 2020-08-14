@@ -6,10 +6,11 @@ from scene import *
 from sound import *
 import console
 import itertools
+import json
 
 A = Action
 
-DEBUG_LEVEL = 0  # max level to show
+DEBUG_LEVEL = 1  # max level to show
 console.clear()
 print('DEBUG LEVEL ', DEBUG_LEVEL)
 
@@ -27,12 +28,22 @@ Nc = 3
 Ns = 3
 Nsh = 3
 
+# Default parm if setsolitaireParm.txt not exist
 parm = dict(  # of all parameters that can be specified in the gui
     # SOUND_ON = True,
-    SPEED=0,
+    DELAY=0.5,
+    DEAL=0.0,
     EASY=True,
     REMOVE=False,
-    MENU="A")
+    MENU="B",
+    MENU_idx=1)
+
+# Get parm from json file if exists
+try:
+    with open('setsolitaireParm.txt', 'r') as f:
+        parm = json.load(f)
+except:
+    pass
 
 
 class scalefactor(dict):
@@ -42,29 +53,35 @@ class scalefactor(dict):
 
 sfac = scalefactor()
 
-paramnames = ['SPEED', 'EASY', 'MENU', 'REMOVE']
+paramnames = ['DELAY', 'DEAL', 'EASY', 'MENU', 'REMOVE']
 
-sfac['SPEED'] = 1
+sfac['DELAY'] = 11
+sfac['DEAL'] = 22
 
 
 # called from menu gui setsolitaire.pyui
 def input_action(sender):
-    dbPrint('sender.name {} sender.value {}'.format(sender.name, sender.value))
+    try:
+        dbPrint(
+            'sender.name {} sender.value {}'.format(sender.name, sender.value))
+    except:
+        pass
     # get global params that are in the gui and update corresponding text if exists
     # eg if key is 'PAR_XX' the gui input slider etc must have name PAR_XX
     # a text box named par_xx_text will be populated with par_xx: nnnnn
     for pn in parm.keys():
         try:
-            # get scaled parameter
-            # parm[pn] = sender.superview[pn].value * sfac[pn]
-            parm[pn] = sender.superview[pn].value
+            # get scaled and ceil parameter
+            parm[pn] = int(sender.superview[pn].value * sfac[pn])
+            # parm[pn] = sender.superview[pn].value
             # update text
-            sender.superview[pn.lower() + '_text'].text = '{}: {:.2f}'.format(
+            sender.superview[pn.lower() + '_text'].text = '{}: {}'.format(
                 pn.lower(), parm[pn])
         except:
             try:
                 parm[pn] = sender.superview[pn].segments[sender.superview[pn]
                                                          .selected_index]
+                parm[pn + '_idx'] = sender.superview[pn].selected_index
                 # update text
                 sender.superview[pn.lower() +
                                  '_text'].text = '{}: {:s}'.format(
@@ -377,6 +394,7 @@ class MyScene(Scene):
         self.background_color = (0, 0, .5)
         self.v = None
         self.INPUT_ACTION_TAKEN = False
+        self.nextT = 0
         # set up all permanent nodes and subnodes
         self.buttonParmPopup = ShapeNode(
             ui.Path.rect(0, 0, 50, 50),
@@ -435,6 +453,10 @@ class MyScene(Scene):
         self.numChildrenSetup = len(self.children)
 
         self.start()
+
+    def stop(self):
+        with open('setsolitaireParm.txt', 'w') as f:
+            json.dump(parm, f)
 
     def start(self):
         # remove added card nodes and free their positions
@@ -500,13 +522,23 @@ class MyScene(Scene):
             # print(bestSet)
             node.x_scale = 1
 
+    def activateAutoPlay(self):
+        self.autoPlay()
+        self.dealLabel.text = checkDeck(self.deal)
+        self.deckLabel.text = checkDeck(self.deck)
+        if (len(self.deck) == 0) & (len(findSets(self.deal)) == 0):
+            # if len(self.deck) == 0:
+            # deck empty end game but cards left in deal
+            self.message.text = 'Game Over\n Auto Play'
+            self.startNextTouch = True
+
     def autoPlay(self):
         if parm['REMOVE']:
             bestSetData = findBestSet(self.deal, self.deck)
         else:
             allSets = findSets(self.deal)
             dbPrint(allSets, level=3)
-            dbPrint('sd ', self.setsDisplayed)
+            dbPrint('sd ', self.setsDisplayed, level=2)
             dbPrint('cardsOnTable ', self.cardsOnTable, level=3)
             for bestSetData in allSets:
                 dbPrint(bestSetData, level=3)
@@ -516,7 +548,7 @@ class MyScene(Scene):
                     if [card.color, card.number, card.shape, card.shade] in
                     bestSetData
                 }
-                dbPrint('setsel ', setSelected)
+                dbPrint('setsel ', setSelected, level=2)
                 if setSelected not in self.setsDisplayed:
                     break
             else:
@@ -561,6 +593,24 @@ class MyScene(Scene):
                     ctmp = Card(None, None, *newCardData)
                     self.add_child(ctmp)
                     self.cardsOnTable.append(ctmp)
+
+    def moveAutoFoundToDisplay(self):
+        if len(self.setAutoFound) > 0:  # in autoplay
+            self.dispFound2(self.setAutoFound, auto=True)
+            # for node in self.cardsOnTable:
+            for node in self.cardsLeft:
+                # restore cards made smaller during auto play
+                node.remove_all_actions()
+                node.run_action(A.scale_to(1, 3))
+
+            for node in self.setAutoFound:
+                # print(node.position, self.setsFound.point_from_scene(node.position))
+                if parm['REMOVE']:
+                    self.cardsOnTable.remove(node)
+                freePositions[node.posInd] = True
+                # node.remove_from_parent()
+
+        self.setAutoFound = []
 
     def dispFound2(self, allSetsCards, auto=False):
         # print('line 544', allSetsCards)
@@ -609,6 +659,16 @@ class MyScene(Scene):
             self.xDisp = self.xDispCol
 
     def update(self):
+        if parm['DELAY'] == 11:
+            return
+        if self.t > self.nextT:
+            self.activateAutoPlay()
+            self.moveAutoFoundToDisplay()
+            self.score.text = "{} Correct Set Calls, {} Incorrect, {} Good Deals, {} Premature {} Auto".format(
+                self.numCorrectSets, self.numBadSets, self.numCorrectDeals,
+                self.numBadDeals, self.numAuto)
+
+            self.nextT += parm['DELAY']
         pass
 
     def touch_began(self, touch):
@@ -625,22 +685,7 @@ class MyScene(Scene):
             self.start()
             return
 
-        if len(self.setAutoFound) > 0:  # in autoplay
-            self.dispFound2(self.setAutoFound, auto=True)
-            # for node in self.cardsOnTable:
-            for node in self.cardsLeft:
-                # restore cards made smaller during auto play
-                node.remove_all_actions()
-                node.run_action(A.scale_to(1, 3))
-
-            for node in self.setAutoFound:
-                # print(node.position, self.setsFound.point_from_scene(node.position))
-                if parm['REMOVE']:
-                    self.cardsOnTable.remove(node)
-                freePositions[node.posInd] = True
-                # node.remove_from_parent()
-
-        self.setAutoFound = []
+        self.moveAutoFoundToDisplay()
 
         # Assertion check
         # this should never be true so raise exception if occurrs
@@ -663,22 +708,30 @@ class MyScene(Scene):
             if self.v is None:
                 self.v = ui.load_view(
                     'setsolitaire.pyui')  # needed name here explicitly. Why?
-                # repopulate param values in gui
+                # repopulate param values and menus in gui
                 for pn in paramnames:
-                    #self.v[pn].value = parm[pn] / sfac[pn]
-                    self.v[pn].value = parm[pn]
+                    dbPrint(parm[pn], sfac[pn], level=1)
+                    try:
+                        self.v[pn].value = parm[pn] / sfac[pn]
+                        # self.v[pn].value = parm[pn]
+                    except:
+                        pass
+                    try:
+                        self.v[pn].selected_index = parm[pn + '_idx']
+                    except:
+                        pass
                     dbPrint(pn, parm[pn])
+
                 self.v.background_color = '#5564ff'
                 self.v.tint_color = '#12ff26'
 
                 # popover will close when touch outside it
-                input_action(self.v['SPEED'])  # force update of parameters
+                input_action(self.v['DELAY'])  # force update of parameters
                 self.v.present(
                     'popover',
                     popover_location=(touch.location[0],
                                       768 - touch.location[1]),
                     hide_title_bar=True)
-                #input_action(self.v['SPEED']) # force update of parameters
                 self.v.wait_modal()
                 self.INPUT_ACTION_TAKEN = True
                 self.v = None
@@ -726,14 +779,7 @@ class MyScene(Scene):
             self.startNextTouch = True
 
         if touch.location in self.buttonAuto.bbox:
-            self.autoPlay()
-            self.dealLabel.text = checkDeck(self.deal)
-            self.deckLabel.text = checkDeck(self.deck)
-            if (len(self.deck) == 0) & (len(findSets(self.deal)) == 0):
-                # if len(self.deck) == 0:
-                # deck empty end game but cards left in deal
-                self.message.text = 'Game Over\n Auto Play'
-                self.startNextTouch = True
+            self.activateAutoPlay()
 
         for node in self.children[self.numChildrenSetup:]:
             # print(node.z_position)
