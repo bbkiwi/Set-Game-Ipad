@@ -1,3 +1,4 @@
+# TODO fix game over auto plays does bot move last set to display
 # have option find all sets in deal then replenish deal
 # have option to deal more even if sets remain (maybe penalty)
 import random
@@ -22,8 +23,8 @@ def dbPrint(*args, level=1):
 
 
 # TODO get ride of these global vars
-Ninitial = 12  # initial deal
-Ndeal = 3  # auto and manual deal size when no sets left
+#Ninitial = 12  # initial deal
+#Ndeal = 3  # auto and manual deal size when no sets left
 Nc = 3
 Ns = 3
 Nsh = 3
@@ -31,12 +32,21 @@ Nsh = 3
 # Default parm if setsolitaireParm.txt not exist
 parm = dict(  # of all parameters that can be specified in the gui
     # SOUND_ON = True,
-    DELAY=0.5,
-    DEAL=0.0,
+    DELAY=11,
+    DEAL=3,
+    STARTDEAL=12,
     EASY=True,
+    FILL=True,
     REMOVE=False,
-    MENU="B",
-    MENU_idx=1)
+    PROPERTY='Shade',
+    PROPERTY_idx=3,
+    ATTRIBUTE='2',
+    ATTRIBUTE_idx=1)
+
+paramnames = [
+    'DELAY', 'DEAL', 'STARTDEAL', 'EASY', 'FILL', 'PROPERTY', 'ATTRIBUTE',
+    'REMOVE'
+]
 
 # Get parm from json file if exists
 try:
@@ -46,17 +56,25 @@ except:
     pass
 
 
-class scalefactor(dict):
+class parmScale(dict):
     def __missing__(self, key):
         return 1
 
 
-sfac = scalefactor()
+class parmShift(dict):
+    def __missing__(self, key):
+        return 0
 
-paramnames = ['DELAY', 'DEAL', 'EASY', 'MENU', 'REMOVE']
 
-sfac['DELAY'] = 11
-sfac['DEAL'] = 22
+sfac = parmScale()
+sfac['DELAY'] = 9
+sfac['DEAL'] = 6
+sfac['STARTDEAL'] = 15
+
+pshift = parmShift()
+pshift['DELAY'] = 2
+pshift['DEAL'] = 1
+pshift['STARTDEAL'] = 3
 
 
 # called from menu gui setsolitaire.pyui
@@ -71,9 +89,8 @@ def input_action(sender):
     # a text box named par_xx_text will be populated with par_xx: nnnnn
     for pn in parm.keys():
         try:
-            # get scaled and ceil parameter
-            parm[pn] = int(sender.superview[pn].value * sfac[pn])
-            # parm[pn] = sender.superview[pn].value
+            # get parameter scaled, ceil and shifted
+            parm[pn] = int(sender.superview[pn].value * sfac[pn]) + pshift[pn]
             # update text
             sender.superview[pn.lower() + '_text'].text = '{}: {}'.format(
                 pn.lower(), parm[pn])
@@ -143,7 +160,7 @@ def dealCard(deck):
 def makeDeal(deck):
     # deal = random.sample(deck, N)
     deal = []
-    for i in range(Ninitial):
+    for i in range(parm['STARTDEAL']):
         deal.append(dealCard(deck))
     return deal
 
@@ -470,7 +487,7 @@ class MyScene(Scene):
 
         self.numCorrectSets = 0
         self.numBadSets = 0
-        self.numCorrectDeals = Ninitial
+        self.numCorrectDeals = parm['STARTDEAL']
         self.numBadDeals = 0
         self.numAuto = 0
 
@@ -486,7 +503,15 @@ class MyScene(Scene):
 
         # make backend deck
         if parm['EASY']:
-            self.deck = makeDeck(shadeSlice=(2, 3, 1))
+            attNum = parm['ATTRIBUTE_idx']
+            if parm['PROPERTY'] == 'Color':
+                self.deck = makeDeck(colorSlice=(attNum, attNum + 1, 1))
+            elif parm['PROPERTY'] == 'Number':
+                self.deck = makeDeck(numberSlice=(attNum, attNum + 1, 1))
+            elif parm['PROPERTY'] == 'Shape':
+                self.deck = makeDeck(shapeSlice=(attNum, attNum + 1, 1))
+            elif parm['PROPERTY'] == 'Shade':
+                self.deck = makeDeck(shadeSlice=(attNum, attNum + 1, 1))
         else:
             self.deck = makeDeck()
 
@@ -584,9 +609,12 @@ class MyScene(Scene):
 
         else:  # no more sets on table, add new cards from deck
             if len(self.deck) != 0:
-                # NdealNow = Ndeal
-                NdealNow = min(
-                    len(self.deck), max(Ndeal, Ninitial - len(self.deal)))
+                if parm['FILL']:
+                    NdealNow = min(
+                        len(self.deck),
+                        max(parm['DEAL'], parm['STARTDEAL'] - len(self.deal)))
+                else:
+                    NdealNow = min(len(self.deck), parm['DEAL'])
                 for i in range(NdealNow):
                     newCardData = dealCard(self.deck)
                     self.deal.append(newCardData)
@@ -659,7 +687,7 @@ class MyScene(Scene):
             self.xDisp = self.xDispCol
 
     def update(self):
-        if parm['DELAY'] == 11:
+        if parm['DELAY'] >= 11:
             return
         if self.t > self.nextT:
             self.activateAutoPlay()
@@ -668,8 +696,7 @@ class MyScene(Scene):
                 self.numCorrectSets, self.numBadSets, self.numCorrectDeals,
                 self.numBadDeals, self.numAuto)
 
-            self.nextT += parm['DELAY']
-        pass
+            self.nextT = self.t + parm['DELAY']
 
     def touch_began(self, touch):
 
@@ -710,15 +737,17 @@ class MyScene(Scene):
                     'setsolitaire.pyui')  # needed name here explicitly. Why?
                 # repopulate param values and menus in gui
                 for pn in paramnames:
-                    dbPrint(parm[pn], sfac[pn], level=1)
+                    dbPrint(parm[pn], sfac[pn], pshift[pn], level=1)
                     try:
-                        self.v[pn].value = parm[pn] / sfac[pn]
+                        self.v[pn].value = (parm[pn] - pshift[pn]) / sfac[pn]
                         # self.v[pn].value = parm[pn]
                     except:
+                        dbPrint(pn, 'value exception')
                         pass
                     try:
                         self.v[pn].selected_index = parm[pn + '_idx']
                     except:
+                        dbPrint(pn, 'selected_index exception')
                         pass
                     dbPrint(pn, parm[pn])
 
@@ -749,9 +778,14 @@ class MyScene(Scene):
                     self.message.text = 'Game Over \nafter request new card'
                     self.startNextTouch = True
                     return
-                # NdealNow = Ndeal):
-                NdealNow = min(
-                    len(self.deck), max(Ndeal, Ninitial - len(self.deal)))
+
+                if parm['FILL']:
+                    NdealNow = min(
+                        len(self.deck),
+                        max(parm['DEAL'], parm['STARTDEAL'] - len(self.deal)))
+                else:
+                    NdealNow = min(len(self.deck), parm['DEAL'])
+
                 for i in range(NdealNow):
                     newCard = dealCard(self.deck)
                     self.deal.append(newCard)

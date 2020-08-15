@@ -5,7 +5,7 @@
         "nodes" : [
 
         ],
-        "frame" : "{{40, 266}, {200, 34}}",
+        "frame" : "{{33, 439}, {310, 34}}",
         "class" : "Slider",
         "attributes" : {
           "action" : "input_action",
@@ -18,7 +18,7 @@
           "value" : 0.5,
           "corner_radius" : 0,
           "border_color" : "RGBA(1.000000,0.555556,0.333333,1.000000)",
-          "name" : "SPEED"
+          "name" : "DELAY"
         },
         "selected" : false
       },
@@ -26,7 +26,7 @@
         "nodes" : [
 
         ],
-        "frame" : "{{103, 46}, {51, 31}}",
+        "frame" : "{{111, 46}, {51, 31}}",
         "class" : "Switch",
         "attributes" : {
           "action" : "input_action",
@@ -43,17 +43,17 @@
         "nodes" : [
 
         ],
-        "frame" : "{{47, 158}, {167, 52}}",
+        "frame" : "{{243, 30}, {276, 31}}",
         "class" : "SegmentedControl",
         "attributes" : {
           "action" : "input_action",
           "flex" : "LR",
-          "segments" : "A|B|C",
+          "segments" : "Color|Number|Shape|Shade",
           "frame" : "{{100, 146}, {120, 29}}",
           "uuid" : "BF882477-D30C-4FE9-B79B-4F00C1D161E0",
           "class" : "SegmentedControl",
           "border_color" : "RGBA(1.000000,1.000000,0.200000,1.000000)",
-          "name" : "MENU"
+          "name" : "PROPERTY"
         },
         "selected" : false
       },
@@ -61,33 +61,14 @@
         "nodes" : [
 
         ],
-        "frame" : "{{40, 226}, {200, 32}}",
+        "frame" : "{{33, 399}, {200, 32}}",
         "class" : "TextField",
         "attributes" : {
-          "name" : "speed_text",
+          "name" : "delay_text",
           "frame" : "{{60, 144}, {200, 32}}",
           "spellchecking_type" : "default",
           "class" : "TextField",
           "uuid" : "A13E3CC4-D629-435E-BE7C-B98DE54FC6A1",
-          "alignment" : "left",
-          "autocorrection_type" : "default",
-          "font_size" : 17,
-          "font_name" : "<System>"
-        },
-        "selected" : false
-      },
-      {
-        "nodes" : [
-
-        ],
-        "frame" : "{{114, 6}, {200, 32}}",
-        "class" : "TextField",
-        "attributes" : {
-          "name" : "menu_text",
-          "frame" : "{{60, 144}, {200, 32}}",
-          "spellchecking_type" : "default",
-          "class" : "TextField",
-          "uuid" : "E435A48E-6E27-4455-9E6C-51A8457494C8",
           "alignment" : "left",
           "autocorrection_type" : "default",
           "font_size" : 17,
@@ -126,7 +107,7 @@
           "class" : "Label",
           "alignment" : "left",
           "text" : "Easy",
-          "name" : "label1",
+          "name" : "label1b",
           "font_size" : 18
         },
         "selected" : false
@@ -135,18 +116,18 @@
         "nodes" : [
 
         ],
-        "frame" : "{{103, 85}, {51, 31}}",
+        "frame" : "{{111, 111}, {51, 31}}",
         "class" : "Switch",
         "attributes" : {
-          "font_size" : 18,
           "action" : "input_action",
-          "background_color" : "RGBA(0.233333,1.000000,0.233333,1.000000)",
+          "font_size" : 18,
+          "alignment" : "left",
           "frame" : "{{135, 145}, {51, 31}}",
           "class" : "Switch",
+          "text" : "Full",
+          "background_color" : "RGBA(0.233333,1.000000,0.233333,1.000000)",
           "uuid" : "F611AD63-6E7C-42B1-B354-7EB0EE11AD67",
           "value" : true,
-          "alignment" : "left",
-          "text" : "Full",
           "name" : "REMOVE",
           "font_name" : "<System>"
         },
@@ -156,7 +137,7 @@
         "nodes" : [
 
         ],
-        "frame" : "{{175, 85}, {74, 31}}",
+        "frame" : "{{175, 111}, {74, 31}}",
         "class" : "Label",
         "attributes" : {
           "name" : "label2",
@@ -174,7 +155,7 @@
         "nodes" : [
 
         ],
-        "frame" : "{{40, 85}, {55, 31}}",
+        "frame" : "{{48, 111}, {55, 31}}",
         "class" : "Label",
         "attributes" : {
           "name" : "label3",
@@ -187,16 +168,166 @@
           "font_name" : "<System>"
         },
         "selected" : false
+      },
+      {
+        "nodes" : [
+
+        ],
+        "frame" : "{{33, 266}, {200, 32}}",
+        "class" : "TextField",
+        "attributes" : {
+          "font_name" : "<System>",
+          "frame" : "{{60, 144}, {200, 32}}",
+          "spellchecking_type" : "default",
+          "class" : "TextField",
+          "uuid" : "A13E3CC4-D629-435E-BE7C-B98DE54FC6A1",
+          "alignment" : "left",
+          "autocorrection_type" : "default",
+          "name" : "deal_text",
+          "font_size" : 17
+        },
+        "selected" : false
+      },
+      {
+        "nodes" : [
+
+        ],
+        "frame" : "{{33, 306}, {225, 34}}",
+        "class" : "Slider",
+        "attributes" : {
+          "action" : "input_action",
+          "flex" : "W",
+          "border_width" : 3,
+          "frame" : "{{60, 143}, {200, 34}}",
+          "tint_color" : "RGBA(1.000000,1.000000,0.666667,1.000000)",
+          "uuid" : "48E1732C-5268-42FE-BE7B-6529F0F07597",
+          "class" : "Slider",
+          "value" : 0.5,
+          "corner_radius" : 0,
+          "border_color" : "RGBA(1.000000,0.555556,0.333333,1.000000)",
+          "name" : "DEAL"
+        },
+        "selected" : false
+      },
+      {
+        "nodes" : [
+
+        ],
+        "frame" : "{{314, 69}, {120, 29}}",
+        "class" : "SegmentedControl",
+        "attributes" : {
+          "action" : "input_action",
+          "flex" : "LR",
+          "segments" : "1|2|3",
+          "frame" : "{{234, 225}, {120, 29}}",
+          "uuid" : "4EBE4F9D-37D0-49D6-8231-249DFFDA3A72",
+          "class" : "SegmentedControl",
+          "name" : "ATTRIBUTE"
+        },
+        "selected" : true
+      },
+      {
+        "nodes" : [
+
+        ],
+        "frame" : "{{325.5, 306}, {225, 34}}",
+        "class" : "Slider",
+        "attributes" : {
+          "action" : "input_action",
+          "flex" : "W",
+          "border_width" : 3,
+          "frame" : "{{60, 143}, {200, 34}}",
+          "tint_color" : "RGBA(1.000000,1.000000,0.666667,1.000000)",
+          "uuid" : "48E1732C-5268-42FE-BE7B-6529F0F07597",
+          "class" : "Slider",
+          "value" : 0.5,
+          "corner_radius" : 0,
+          "border_color" : "RGBA(1.000000,0.555556,0.333333,1.000000)",
+          "name" : "STARTDEAL"
+        },
+        "selected" : false
+      },
+      {
+        "nodes" : [
+
+        ],
+        "frame" : "{{326, 266}, {200, 32}}",
+        "class" : "TextField",
+        "attributes" : {
+          "font_size" : 17,
+          "frame" : "{{60, 144}, {200, 32}}",
+          "spellchecking_type" : "default",
+          "class" : "TextField",
+          "uuid" : "A13E3CC4-D629-435E-BE7C-B98DE54FC6A1",
+          "alignment" : "left",
+          "autocorrection_type" : "default",
+          "name" : "startdeal_text",
+          "font_name" : "<System>"
+        },
+        "selected" : false
+      },
+      {
+        "nodes" : [
+
+        ],
+        "frame" : "{{111, 190}, {51, 31}}",
+        "class" : "Switch",
+        "attributes" : {
+          "action" : "input_action",
+          "frame" : "{{269, 224}, {51, 31}}",
+          "class" : "Switch",
+          "background_color" : "RGBA(1.000000,1.000000,0.066667,1.000000)",
+          "value" : true,
+          "uuid" : "93599958-6707-4F4E-9B6A-1C0007E58146",
+          "name" : "FILL"
+        },
+        "selected" : false
+      },
+      {
+        "nodes" : [
+
+        ],
+        "frame" : "{{48, 190}, {55, 32}}",
+        "class" : "Label",
+        "attributes" : {
+          "name" : "label4",
+          "frame" : "{{219, 224}, {150, 32}}",
+          "uuid" : "8C47DF72-D14C-461B-94C4-591C9BBFBEF5",
+          "class" : "Label",
+          "alignment" : "left",
+          "text" : "Deal",
+          "font_size" : 18,
+          "font_name" : "<System>"
+        },
+        "selected" : false
+      },
+      {
+        "nodes" : [
+
+        ],
+        "frame" : "{{175, 189}, {74, 32}}",
+        "class" : "Label",
+        "attributes" : {
+          "name" : "label5",
+          "frame" : "{{219, 224}, {150, 32}}",
+          "uuid" : "D02AF6E8-19C1-4B06-AA89-065B43CC12AB",
+          "class" : "Label",
+          "alignment" : "left",
+          "text" : "Fill",
+          "font_size" : 18,
+          "font_name" : "<System>"
+        },
+        "selected" : false
       }
     ],
-    "frame" : "{{0, 0}, {320, 320}}",
+    "frame" : "{{0, 0}, {588, 479}}",
     "class" : "View",
     "attributes" : {
-      "background_color" : "RGBA(0.766667,1.000000,0.766667,1.000000)",
-      "enabled" : true,
-      "tint_color" : "RGBA(0.000000,0.478000,1.000000,1.000000)",
       "name" : "",
+      "enabled" : true,
       "border_color" : "RGBA(0.000000,0.000000,0.000000,1.000000)",
+      "background_color" : "RGBA(0.766667,1.000000,0.766667,1.000000)",
+      "tint_color" : "RGBA(0.000000,0.478000,1.000000,1.000000)",
       "flex" : ""
     },
     "selected" : false
