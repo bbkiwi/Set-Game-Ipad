@@ -11,7 +11,7 @@ import json
 
 A = Action
 
-DEBUG_LEVEL = 1  # max level to show
+DEBUG_LEVEL = 0  # max level to show
 console.clear()
 print('DEBUG LEVEL ', DEBUG_LEVEL)
 
@@ -22,17 +22,10 @@ def dbPrint(*args, level=1):
     print(level * ' ', 'LINE:', sys._getframe().f_back.f_lineno, *args)
 
 
-# TODO get ride of these global vars
-#Ninitial = 12  # initial deal
-#Ndeal = 3  # auto and manual deal size when no sets left
-Nc = 3
-Ns = 3
-Nsh = 3
-
 # Default parm if setsolitaireParm.txt not exist
 parm = dict(  # of all parameters that can be specified in the gui
     # SOUND_ON = True,
-    DELAY=11,
+    DELAY=31,
     DEAL=3,
     STARTDEAL=12,
     EASY=True,
@@ -67,7 +60,7 @@ class parmShift(dict):
 
 
 sfac = parmScale()
-sfac['DELAY'] = 9
+sfac['DELAY'] = 29
 sfac['DEAL'] = 6
 sfac['STARTDEAL'] = 15
 
@@ -463,6 +456,14 @@ class MyScene(Scene):
         self.dealLabel = LabelNode('', color='yellow', parent=self.dealInfo)
         self.dealLabel.anchor_point = (0, 5)
 
+        self.timerBar = ShapeNode(
+            ui.Path.rect(0, 0, 5, 700),
+            position=(1020, 0),
+            anchor_point=(0, 0),
+            fill_color='yellow',
+            parent=self)
+        self.add_child(self.timerBar)
+
         ws = ui.get_window_size()
         self.setsFound = Node(position=(0, ws[1]), parent=self)
 
@@ -540,6 +541,8 @@ class MyScene(Scene):
         self.score.text = "{} Correct Set Calls, {} Incorrect, {} Good Deals, {} Premature, {} Auto".format(
             self.numCorrectSets, self.numBadSets, self.numCorrectDeals,
             self.numBadDeals, self.numAuto)
+
+        self.nextT = self.t + parm['DELAY']
 
     def dispFoundAction(self, node, progress):
         return
@@ -687,26 +690,20 @@ class MyScene(Scene):
             self.xDisp = self.xDispCol
 
     def update(self):
-        if parm['DELAY'] >= 11:
+        if parm['DELAY'] >= 31 or self.startNextTouch:
+            self.timerBar.alpha = 0
             return
+        self.timerBar.alpha = 1
+        self.timerBar.y_scale = (self.nextT - self.t) / parm['DELAY']
         if self.t > self.nextT:
             self.activateAutoPlay()
             self.moveAutoFoundToDisplay()
             self.score.text = "{} Correct Set Calls, {} Incorrect, {} Good Deals, {} Premature {} Auto".format(
                 self.numCorrectSets, self.numBadSets, self.numCorrectDeals,
                 self.numBadDeals, self.numAuto)
-
             self.nextT = self.t + parm['DELAY']
 
     def touch_began(self, touch):
-
-        #TODO BUG if touch while cards are moving to display they stop and never get removed
-
-        # remove actions from all cards
-        # for node in self.children[self.numChildrenSetup:]: 
-        # node.remove_all_actions()
-
-        # print(self.t)
 
         if self.startNextTouch:
             self.start()
@@ -756,6 +753,10 @@ class MyScene(Scene):
 
                 # popover will close when touch outside it
                 input_action(self.v['DELAY'])  # force update of parameters
+
+                # TODO attempt to immediately adjust count down
+                self.nextT = self.t + parm['DELAY']
+
                 self.v.present(
                     'popover',
                     popover_location=(touch.location[0],
@@ -773,6 +774,8 @@ class MyScene(Scene):
                 play_effect('game:Spaceship')
                 self.numBadDeals += 1
             else:
+                # correct request
+                self.nextT = self.t + parm['DELAY']  # reset auto timer
                 if len(self.deck) == 0:
                     # deck empty end game
                     self.message.text = 'Game Over \nafter request new card'
@@ -848,8 +851,9 @@ class MyScene(Scene):
                                 # c.x_scale = 1
                             # self.userCardsSelected = []
                             self.numBadSets += 1
-                        elif parm['REMOVE']:  # working ok
+                        elif parm['REMOVE']:
                             # found set, remove cards from deck
+                            self.nextT = self.t + parm['DELAY']  # reset auto timer
                             # make nice sound
                             play_effect('digital:PowerUp1')
                             self.numCorrectSets += 1
@@ -871,6 +875,7 @@ class MyScene(Scene):
                             if set(self.userCardsSelected
                                    ) not in self.setsDisplayed:
                                 # found new set but dont remove
+                                self.nextT = self.t + parm['DELAY']  # reset auto timer
                                 # make nice sound
                                 play_effect('digital:PowerUp1')
                                 self.numCorrectSets += 1
