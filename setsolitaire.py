@@ -7,8 +7,6 @@ import console
 import itertools
 import json
 
-A = Action
-
 DEBUG_LEVEL = 0  # max level to show
 console.clear()
 print('DEBUG LEVEL ', DEBUG_LEVEL)
@@ -22,7 +20,7 @@ def dbPrint(*args, level=1):
 
 # Default parm if setsolitaireParm.txt not exist
 parm = dict(  # of all parameters that can be specified in the gui
-    # SOUND_ON = True,
+    SOUND_ON=True,
     DELAY=31,
     DEAL=3,
     STARTDEAL=12,
@@ -35,8 +33,8 @@ parm = dict(  # of all parameters that can be specified in the gui
     ATTRIBUTE_idx=1)
 
 paramnames = [
-    'DELAY', 'DEAL', 'STARTDEAL', 'EASY', 'FILL', 'PROPERTY', 'ATTRIBUTE',
-    'REMOVE'
+    'SOUND_ON', 'DELAY', 'DEAL', 'STARTDEAL', 'EASY', 'FILL', 'PROPERTY',
+    'ATTRIBUTE', 'REMOVE'
 ]
 
 # Get parm from json file if exists
@@ -674,7 +672,7 @@ class MyScene(Scene):
             for node in self.cardsLeft:
                 # restore cards made smaller during auto play
                 node.remove_all_actions()
-                node.run_action(A.scale_to(1, actionTime))
+                node.run_action(Action.scale_to(1, actionTime))
 
             for node in self.setAutoFound:
                 # print(node.position, self.setsFound.point_from_scene(node.position))
@@ -696,14 +694,14 @@ class MyScene(Scene):
             ctmp = Card(*self.setsFound.point_from_scene(card.position),
                         card.color, card.number, card.shape, card.shade)
             if auto:
-                ctmp.cardShape.fill_color = '#dee5e6'
+                ctmp.cardShape.fill_color = '#000000'
             self.setsFound.add_child(ctmp)
             ctmp.run_action(
-                A.sequence(
-                    A.group(
-                        A.scale_to(0.2, actionTime),
-                        A.move_to(self.xDisp, self.yDisp, actionTime,
-                                  TIMING_EASE_IN))))
+                Action.sequence(
+                    Action.group(
+                        Action.scale_to(0.2, actionTime),
+                        Action.move_to(self.xDisp, self.yDisp, actionTime,
+                                       TIMING_EASE_IN))))
             self.xDisp += .2 * width
         self.yDisp -= 0.2 * height + 2
         if self.yDisp <= -3 * (height + 2) - 150:
@@ -778,14 +776,15 @@ class MyScene(Scene):
             # otherwise draw card
             bestSet = findBestSet(self.deal, self.deck)
             if len(bestSet) == 3:
-                play_effect('game:Spaceship')
+                if parm['SOUND_ON']:
+                    play_effect('game:Spaceship')
                 self.numBadDeals += 1
             else:
                 # correct request
                 self.nextT = self.t + parm['DELAY']  # reset auto timer
                 if len(self.deck) == 0:
                     # deck empty end game
-                    self.message.text = 'Game Over \nafter request new card'
+                    self.message.text = 'Game Over'
                     self.startNextTouch = True
                     return
                 self.newDeal()
@@ -820,18 +819,18 @@ class MyScene(Scene):
                                     c.color, c.number, c.shape, c.shade
                                 ] for c in self.userCardsSelected])) == 0:
                             # not a set, make noise subtract penalty etc
-                            play_effect('game:Error')
+                            if parm['SOUND_ON']:
+                                play_effect('game:Error')
                             self.buttonSet.fill_color = 'red'
                             # self.userCalledSet = False
                             for c in self.userCardsSelected:
                                 c.remove_all_actions()
                                 c.run_action(
-                                    A.sequence(
-                                        A.scale_x_to(1.4),
-                                        #A.move_to(letter_pos.x, letter_pos.y, 1.2, TIMING_ELASTIC_OUT),
-                                        A.wait(1),
-                                        A.scale_x_to(1),
-                                        # A.remove()
+                                    Action.sequence(
+                                        Action.scale_x_to(1.4),
+                                        Action.wait(1),
+                                        Action.scale_x_to(1),
+                                        # Action.remove()
                                     ))
                                 # c.x_scale = 1
                             # self.userCardsSelected = []
@@ -840,7 +839,8 @@ class MyScene(Scene):
                             # found set, remove cards from deck
                             self.nextT = self.t + parm['DELAY']  # reset auto timer
                             # make nice sound
-                            play_effect('digital:PowerUp1')
+                            if parm['SOUND_ON']:
+                                play_effect('digital:PowerUp1')
                             self.numCorrectSets += 1
                             self.buttonSet.fill_color = 'green'
                             # self.userCalledSet = False
@@ -862,18 +862,20 @@ class MyScene(Scene):
                                 # found new set but dont remove
                                 self.nextT = self.t + parm['DELAY']  # reset auto timer
                                 # make nice sound
-                                play_effect('digital:PowerUp1')
+                                if parm['SOUND_ON']:
+                                    play_effect('digital:PowerUp1')
                                 self.numCorrectSets += 1
                                 self.buttonSet.fill_color = 'green'
                                 # self.userCalledSet = False
                                 self.dispFound(self.userCardsSelected)
                                 self.dealLabel.text = checkDeck(self.deal)
                             else:
-                                play_effect('arcade:Jump_4')
+                                if parm['SOUND_ON']:
+                                    play_effect('arcade:Jump_4')
                                 self.buttonSet.fill_color = 'red'
                             for c in self.userCardsSelected:
                                 # c.remove_all_actions()
-                                c.run_action(A.scale_x_to(1))
+                                c.run_action(Action.scale_x_to(1))
 
                         self.userCardsSelected = []
                         self.userCalledSet = False
