@@ -1,6 +1,4 @@
-# TODO fix game over auto plays does bot move last set to display
-# have option find all sets in deal then replenish deal
-# have option to deal more even if sets remain (maybe penalty)
+# TODO have option to deal more even if sets remain (maybe penalty)
 import random
 import ui
 from scene import *
@@ -488,9 +486,10 @@ class MyScene(Scene):
 
         self.numCorrectSets = 0
         self.numBadSets = 0
-        self.numCorrectDeals = parm['STARTDEAL']
+        self.numCorrectDeals = 0
         self.numBadDeals = 0
-        self.numAuto = 0
+        self.numAutoSets = 0
+        self.numAutoDeals = 0
 
         ws = ui.get_window_size()
         self.xDisp = self.xDispCol = ws[0] - 225
@@ -537,27 +536,80 @@ class MyScene(Scene):
         self.buttonTouchId = None
         self.userCalledSet = False
         self.userCardsSelected = []
+        self.showAllThenAbort = False
         self.message.text = ''
-        self.score.text = "{} Correct Set Calls, {} Incorrect, {} Good Deals, {} Premature, {} Auto".format(
-            self.numCorrectSets, self.numBadSets, self.numCorrectDeals,
-            self.numBadDeals, self.numAuto)
-
         self.nextT = self.t + parm['DELAY']
+        self.startTime = self.t
+        self.lastScoreShowTime = self.t
 
-    def dispFoundAction(self, node, progress):
-        return
-        if progress > 0.9:
-            # print(bestSet)
-            node.x_scale = 1
+#    def dispFoundAction(self, node, progress):
+#        return
+#        if progress > 0.9:
+#            node.x_scale = 1
+
+    def changeParmPopup(self, touch):
+        if self.v is None:
+            self.v = ui.load_view(
+                'setsolitaire.pyui')  # needed name here explicitly. Why?
+            # repopulate param values and menus in gui
+            for pn in paramnames:
+                dbPrint(parm[pn], sfac[pn], pshift[pn], level=1)
+                try:
+                    self.v[pn].value = (parm[pn] - pshift[pn]) / sfac[pn]
+                    # self.v[pn].value = parm[pn]
+                except:
+                    dbPrint(pn, 'value exception')
+                    pass
+                try:
+                    self.v[pn].selected_index = parm[pn + '_idx']
+                except:
+                    dbPrint(pn, 'selected_index exception')
+                    pass
+                dbPrint(pn, parm[pn])
+
+            self.v.background_color = '#5564ff'
+            self.v.tint_color = '#12ff26'
+
+            # popover will close when touch outside it
+            input_action(self.v['DELAY'])  # force update of parameters
+
+            # TODO attempt to immediately adjust count down
+            self.nextT = self.t + parm['DELAY']
+
+            self.v.present(
+                'popover',
+                popover_location=(touch.location[0], 768 - touch.location[1]),
+                hide_title_bar=True)
+            self.v.wait_modal()
+            self.INPUT_ACTION_TAKEN = True
+            self.v = None
+
+    def newDeal(self):
+        if parm['FILL']:
+            NdealNow = min(
+                len(self.deck),
+                max(parm['DEAL'], parm['STARTDEAL'] - len(self.deal)))
+        else:
+            NdealNow = min(len(self.deck), parm['DEAL'])
+
+        for i in range(NdealNow):
+            newCard = dealCard(self.deck)
+            self.deal.append(newCard)
+            ctmp = Card(None, None, *newCard)
+            self.add_child(ctmp)
+            self.cardsOnTable.append(ctmp)
+            self.deckLabel.text = checkDeck(self.deck)
+            self.dealLabel.text = checkDeck(self.deal)
+            self.updateScore()
 
     def activateAutoPlay(self):
         self.autoPlay()
         self.dealLabel.text = checkDeck(self.deal)
         self.deckLabel.text = checkDeck(self.deck)
         if (len(self.deck) == 0) & (len(findSets(self.deal)) == 0):
-            # if len(self.deck) == 0:
             # deck empty end game but cards left in deal
             self.message.text = 'Game Over\n Auto Play'
+            self.updateScore()
             self.startNextTouch = True
 
     def autoPlay(self):
@@ -606,33 +658,23 @@ class MyScene(Scene):
                     self.cardsLeft.append(node)
             # print([[[node.color, node.number, node.shape,
             # node.shade] for node in self.setAutoFound]])
-            self.numAuto += 1
+            self.numAutoSets += 1
             if parm['REMOVE']:
                 removeCardsInSet(bestSetData, self.deal)
 
         else:  # no more sets on table, add new cards from deck
             if len(self.deck) != 0:
-                if parm['FILL']:
-                    NdealNow = min(
-                        len(self.deck),
-                        max(parm['DEAL'], parm['STARTDEAL'] - len(self.deal)))
-                else:
-                    NdealNow = min(len(self.deck), parm['DEAL'])
-                for i in range(NdealNow):
-                    newCardData = dealCard(self.deck)
-                    self.deal.append(newCardData)
-                    ctmp = Card(None, None, *newCardData)
-                    self.add_child(ctmp)
-                    self.cardsOnTable.append(ctmp)
+                self.newDeal()
+                self.numAutoDeals += 1
 
-    def moveAutoFoundToDisplay(self):
+    def moveAutoFoundToDisplay(self, actionTime=3):
         if len(self.setAutoFound) > 0:  # in autoplay
-            self.dispFound2(self.setAutoFound, auto=True)
+            self.dispFound(self.setAutoFound, auto=True, actionTime=actionTime)
             # for node in self.cardsOnTable:
             for node in self.cardsLeft:
                 # restore cards made smaller during auto play
                 node.remove_all_actions()
-                node.run_action(A.scale_to(1, 3))
+                node.run_action(A.scale_to(1, actionTime))
 
             for node in self.setAutoFound:
                 # print(node.position, self.setsFound.point_from_scene(node.position))
@@ -643,8 +685,8 @@ class MyScene(Scene):
 
         self.setAutoFound = []
 
-    def dispFound2(self, allSetsCards, auto=False):
-        # print('line 544', allSetsCards)
+    def dispFound(self, allSetsCards, auto=False, actionTime=3):
+        # dbPrint(allSetsCards)
         self.setsDisplayed.append(set(allSetsCards))
         # print(self.setsDisplayed)
         for card in allSetsCards:
@@ -659,8 +701,9 @@ class MyScene(Scene):
             ctmp.run_action(
                 A.sequence(
                     A.group(
-                        A.scale_to(0.2, 3),
-                        A.move_to(self.xDisp, self.yDisp, 3, TIMING_EASE_IN))))
+                        A.scale_to(0.2, actionTime),
+                        A.move_to(self.xDisp, self.yDisp, actionTime,
+                                  TIMING_EASE_IN))))
             self.xDisp += .2 * width
         self.yDisp -= 0.2 * height + 2
         if self.yDisp <= -3 * (height + 2) - 150:
@@ -668,39 +711,36 @@ class MyScene(Scene):
             self.yDisp = -150
         self.xDisp = self.xDispCol
 
-    #TODO fix to take nodes making sets
-    def dispFound(self, allSets):
-        dbPrint(allSets)
-        for setData in allSets:
-            # print(set)
-            for cardData in setData:
-                ctmp = Card(self.xDisp, self.yDisp, *cardData)
-                self.setsFound.add_child(ctmp)
-                ctmp.run_action(
-                    A.sequence(
-                        A.group(
-                            A.scale_to(0.2, 3),
-                            A.move_to(self.xDisp, self.yDisp, 3,
-                                      TIMING_EASE_IN))))
-                self.xDisp += .2 * width
-            self.yDisp -= 0.2 * height + 2
-            if self.yDisp <= -3 * (height + 2) - 150:
-                self.xDispCol += 5 + 3 * 0.2 * width
-                self.yDisp = -150
-            self.xDisp = self.xDispCol
+    def updateScore(self):
+        self.score.text = "{} Correct Set Calls, {} Incorrect, {} Good Deals, {} Premature, {} Auto Sets, {} Auto Deals, {} Time".format(
+            self.numCorrectSets, self.numBadSets, self.numCorrectDeals,
+            self.numBadDeals, self.numAutoSets, self.numAutoDeals,
+            int(self.t - self.startTime))
 
     def update(self):
+        if self.t > self.lastScoreShowTime and not self.startNextTouch:
+            self.updateScore()
+            self.lastScoreShowTime += 1
+
+        if self.startNextTouch:
+            self.timerBar.alpha = 0
+            return
+
+        if self.showAllThenAbort:
+            self.activateAutoPlay()
+            self.moveAutoFoundToDisplay(actionTime=0)
+            self.updateScore()
+            return
+
         if parm['DELAY'] >= 31 or self.startNextTouch:
             self.timerBar.alpha = 0
             return
+
         self.timerBar.alpha = 1
         self.timerBar.y_scale = (self.nextT - self.t) / parm['DELAY']
         if self.t > self.nextT:
             self.activateAutoPlay()
             self.moveAutoFoundToDisplay()
-            self.score.text = "{} Correct Set Calls, {} Incorrect, {} Good Deals, {} Premature {} Auto".format(
-                self.numCorrectSets, self.numBadSets, self.numCorrectDeals,
-                self.numBadDeals, self.numAuto)
             self.nextT = self.t + parm['DELAY']
 
     def touch_began(self, touch):
@@ -729,44 +769,11 @@ class MyScene(Scene):
 
         # touched change settings button
         if touch.location in self.buttonParmPopup.frame:
-            if self.v is None:
-                self.v = ui.load_view(
-                    'setsolitaire.pyui')  # needed name here explicitly. Why?
-                # repopulate param values and menus in gui
-                for pn in paramnames:
-                    dbPrint(parm[pn], sfac[pn], pshift[pn], level=1)
-                    try:
-                        self.v[pn].value = (parm[pn] - pshift[pn]) / sfac[pn]
-                        # self.v[pn].value = parm[pn]
-                    except:
-                        dbPrint(pn, 'value exception')
-                        pass
-                    try:
-                        self.v[pn].selected_index = parm[pn + '_idx']
-                    except:
-                        dbPrint(pn, 'selected_index exception')
-                        pass
-                    dbPrint(pn, parm[pn])
-
-                self.v.background_color = '#5564ff'
-                self.v.tint_color = '#12ff26'
-
-                # popover will close when touch outside it
-                input_action(self.v['DELAY'])  # force update of parameters
-
-                # TODO attempt to immediately adjust count down
-                self.nextT = self.t + parm['DELAY']
-
-                self.v.present(
-                    'popover',
-                    popover_location=(touch.location[0],
-                                      768 - touch.location[1]),
-                    hide_title_bar=True)
-                self.v.wait_modal()
-                self.INPUT_ACTION_TAKEN = True
-                self.v = None
+            self.changeParmPopup(touch)
 
         if touch.location in self.buttonPile.frame:
+            if not parm['REMOVE']:
+                return
             # if sets still exist penalty and bad noise
             # otherwise draw card
             bestSet = findBestSet(self.deal, self.deck)
@@ -781,42 +788,20 @@ class MyScene(Scene):
                     self.message.text = 'Game Over \nafter request new card'
                     self.startNextTouch = True
                     return
-
-                if parm['FILL']:
-                    NdealNow = min(
-                        len(self.deck),
-                        max(parm['DEAL'], parm['STARTDEAL'] - len(self.deal)))
-                else:
-                    NdealNow = min(len(self.deck), parm['DEAL'])
-
-                for i in range(NdealNow):
-                    newCard = dealCard(self.deck)
-                    self.deal.append(newCard)
-                    ctmp = Card(None, None, *newCard)
-                    self.add_child(ctmp)
-                    self.cardsOnTable.append(ctmp)
-                    self.deckLabel.text = checkDeck(self.deck)
-                    self.dealLabel.text = checkDeck(self.deal)
-                    self.numCorrectDeals += 1
-            self.score.text = "{} Correct Set Calls, {} Incorrect, {} Good Deals, {} Premature, {} Auto".format(
-                self.numCorrectSets, self.numBadSets, self.numCorrectDeals,
-                self.numBadDeals, self.numAuto)
+                self.newDeal()
+                self.numCorrectDeals += 1
 
             # self.buttonPile.fill_color = 'yellow'
             # self.userCalledSet = True
             return
 
         if touch.location in self.buttonAllAuto.bbox:
-            self.numAuto += 1
-            # TODO find nodes that correspond to cards in sets
-            self.dispFound(findSets(self.deal))
-            self.dealLabel.text = checkDeck(self.deal)
-            self.deckLabel.text = checkDeck(self.deck)
-            self.message.text = 'Game Over \nAuto Find All'
-            self.startNextTouch = True
+            self.showAllThenAbort = True
+            return
 
         if touch.location in self.buttonAuto.bbox:
             self.activateAutoPlay()
+            self.moveAutoFoundToDisplay()
 
         for node in self.children[self.numChildrenSetup:]:
             # print(node.z_position)
@@ -860,7 +845,7 @@ class MyScene(Scene):
                             self.buttonSet.fill_color = 'green'
                             # self.userCalledSet = False
 
-                            self.dispFound2(self.userCardsSelected)
+                            self.dispFound(self.userCardsSelected)
                             removeCardsInSet(
                                 [[c.color, c.number, c.shape, c.shade]
                                  for c in self.userCardsSelected], self.deal)
@@ -881,7 +866,7 @@ class MyScene(Scene):
                                 self.numCorrectSets += 1
                                 self.buttonSet.fill_color = 'green'
                                 # self.userCalledSet = False
-                                self.dispFound2(self.userCardsSelected)
+                                self.dispFound(self.userCardsSelected)
                                 self.dealLabel.text = checkDeck(self.deal)
                             else:
                                 play_effect('arcade:Jump_4')
@@ -893,9 +878,7 @@ class MyScene(Scene):
                         self.userCardsSelected = []
                         self.userCalledSet = False
                 break
-        self.score.text = "{} Correct Set Calls, {} Incorrect, {} Good Deals, {} Premature {} Auto".format(
-            self.numCorrectSets, self.numBadSets, self.numCorrectDeals,
-            self.numBadDeals, self.numAuto)
+        self.updateScore()
 
     def touch_moved(self, touch):
         # immediate move to touch location
@@ -913,7 +896,6 @@ class MyScene(Scene):
             self.cardTouched.x_scale = 1
         self.cardTouched = None
 
-
 if __name__ == '__main__':
-    run(MyScene(), LANDSCAPE, show_fps=True)
+    run(MyScene(), LANDSCAPE, show_fps=False)
 
