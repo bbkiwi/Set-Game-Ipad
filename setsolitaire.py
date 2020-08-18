@@ -402,40 +402,41 @@ class MyScene(Scene):
         self.INPUT_ACTION_TAKEN = False
         self.nextT = 0
         # set up all permanent nodes and subnodes
+
+        self.face = SpriteNode(
+            'emj:Smiling_2', position=(500, 350), parent=self)
+        self.face.alpha = 0
+        self.z_position = 100
+
         self.buttonParmPopup = ShapeNode(
             ui.Path.rect(0, 0, 50, 50),
             position=(625, 25),
             fill_color='green',
             parent=self)
-        self.add_child(self.buttonParmPopup)
 
         self.buttonAllAuto = ShapeNode(
             ui.Path.rect(0, 0, 50, 50),
             position=(325, 25),
             fill_color='white',
             parent=self)
-        self.add_child(self.buttonAllAuto)
 
         self.buttonAuto = ShapeNode(
             ui.Path.rect(0, 0, 50, 50),
             position=(225, 25),
             fill_color='orange',
             parent=self)
-        self.add_child(self.buttonAuto)
 
         self.buttonPile = ShapeNode(
             ui.Path.rect(0, 0, 50, 50),
             position=(125, 25),
             fill_color='purple',
             parent=self)
-        self.add_child(self.buttonPile)
 
         self.buttonSet = ShapeNode(
             ui.Path.rect(0, 0, 50, 50),
             position=(25, 25),
             fill_color='red',
             parent=self)
-        self.add_child(self.buttonSet)
 
         self.message = LabelNode(
             '', position=(800, 225), font=('Helvetica', 50), parent=self)
@@ -458,7 +459,6 @@ class MyScene(Scene):
             anchor_point=(0, 0),
             fill_color='yellow',
             parent=self)
-        self.add_child(self.timerBar)
 
         ws = ui.get_window_size()
         self.setsFound = Node(position=(0, ws[1]), parent=self)
@@ -709,6 +709,30 @@ class MyScene(Scene):
             self.yDisp = -150
         self.xDisp = self.xDispCol
 
+    def flashFace(self, img='emj:Smiling_2', dur=1):
+        self.face.texture = Texture(img)
+        self.face.run_action(
+            Action.sequence(
+                Action.group(
+                    Action.fade_to(1, dur),
+                    Action.scale_x_to(5, dur), Action.scale_y_to(5, dur)),
+                Action.group(
+                    Action.fade_to(0, dur),
+                    Action.scale_x_to(1, dur), Action.scale_y_to(1, dur))))
+
+    def processCorrectSet(self):
+        self.nextT = self.t + parm['DELAY']  # reset auto timer
+        # make nice sound
+        if parm['SOUND_ON']:
+            play_effect('digital:PowerUp1')
+        else:
+            self.flashFace('emj:Smiling_2')
+
+        self.numCorrectSets += 1
+        self.buttonSet.fill_color = 'green'
+        self.dispFound(self.userCardsSelected)
+        self.dealLabel.text = checkDeck(self.deal)
+
     def updateScore(self):
         self.score.text = "{} Correct Set Calls, {} Incorrect, {} Good Deals, {} Premature, {} Auto Sets, {} Auto Deals, {} Time".format(
             self.numCorrectSets, self.numBadSets, self.numCorrectDeals,
@@ -778,6 +802,8 @@ class MyScene(Scene):
             if len(bestSet) == 3:
                 if parm['SOUND_ON']:
                     play_effect('game:Spaceship')
+                else:
+                    self.flashFace('emj:Flushed')
                 self.numBadDeals += 1
             else:
                 # correct request
@@ -821,6 +847,8 @@ class MyScene(Scene):
                             # not a set, make noise subtract penalty etc
                             if parm['SOUND_ON']:
                                 play_effect('game:Error')
+                            else:
+                                self.flashFace('emj:Stuck-Out_Tongue_1')
                             self.buttonSet.fill_color = 'red'
                             # self.userCalledSet = False
                             for c in self.userCardsSelected:
@@ -837,19 +865,10 @@ class MyScene(Scene):
                             self.numBadSets += 1
                         elif parm['REMOVE']:
                             # found set, remove cards from deck
-                            self.nextT = self.t + parm['DELAY']  # reset auto timer
-                            # make nice sound
-                            if parm['SOUND_ON']:
-                                play_effect('digital:PowerUp1')
-                            self.numCorrectSets += 1
-                            self.buttonSet.fill_color = 'green'
-                            # self.userCalledSet = False
-
-                            self.dispFound(self.userCardsSelected)
+                            self.processCorrectSet()
                             removeCardsInSet(
                                 [[c.color, c.number, c.shape, c.shade]
                                  for c in self.userCardsSelected], self.deal)
-                            self.dealLabel.text = checkDeck(self.deal)
                             for c in self.userCardsSelected:
                                 freePositions[c.posInd] = True
                                 self.cardsOnTable.remove(c)
@@ -860,18 +879,12 @@ class MyScene(Scene):
                             if set(self.userCardsSelected
                                    ) not in self.setsDisplayed:
                                 # found new set but dont remove
-                                self.nextT = self.t + parm['DELAY']  # reset auto timer
-                                # make nice sound
-                                if parm['SOUND_ON']:
-                                    play_effect('digital:PowerUp1')
-                                self.numCorrectSets += 1
-                                self.buttonSet.fill_color = 'green'
-                                # self.userCalledSet = False
-                                self.dispFound(self.userCardsSelected)
-                                self.dealLabel.text = checkDeck(self.deal)
+                                self.processCorrectSet()
                             else:
                                 if parm['SOUND_ON']:
                                     play_effect('arcade:Jump_4')
+                                else:
+                                    self.flashFace('emj:Astonished')
                                 self.buttonSet.fill_color = 'red'
                             for c in self.userCardsSelected:
                                 # c.remove_all_actions()
