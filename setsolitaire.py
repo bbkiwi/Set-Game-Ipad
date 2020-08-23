@@ -13,14 +13,14 @@ print('DEBUG LEVEL ', DEBUG_LEVEL)
 
 
 def dbPrint(*args, level=1):
-    if level > DEBUG_LEVEL:
-        return
-    print(level * ' ', 'LINE:', sys._getframe().f_back.f_lineno, *args)
+    if level <= DEBUG_LEVEL:
+        print(level * ' ', 'LINE:', sys._getframe().f_back.f_lineno, *args)
 
 
 # Default parm if setsolitaireParm.txt not exist
 parm = dict(  # of all parameters that can be specified in the gui
     SOUND_ON=True,
+    FACES=True,
     DELAY=31,
     DEAL=3,
     STARTDEAL=12,
@@ -33,8 +33,8 @@ parm = dict(  # of all parameters that can be specified in the gui
     ATTRIBUTE_idx=1)
 
 paramnames = [
-    'SOUND_ON', 'DELAY', 'DEAL', 'STARTDEAL', 'EASY', 'FILL', 'PROPERTY',
-    'ATTRIBUTE', 'REMOVE'
+    'SOUND_ON', 'FACES', 'DELAY', 'DEAL', 'STARTDEAL', 'EASY', 'FILL',
+    'PROPERTY', 'ATTRIBUTE', 'REMOVE'
 ]
 
 # Get parm from json file if exists
@@ -406,7 +406,7 @@ class MyScene(Scene):
         self.face = SpriteNode(
             'emj:Smiling_2', position=(500, 350), parent=self)
         self.face.alpha = 0
-        self.z_position = 100
+        self.z_position = 100000
 
         self.buttonParmPopup = ShapeNode(
             ui.Path.rect(0, 0, 50, 50),
@@ -438,8 +438,19 @@ class MyScene(Scene):
             fill_color='red',
             parent=self)
 
+        self.messageBoard = Node(position=(50, 300), alpha=0, parent=self)
+        #self.rect = SpriteNode(color='black', parent=self.messageBoard)
+        self.rect = ShapeNode(
+            outlinePath, color='#ff4300', parent=self.messageBoard)
+        self.rect.anchor_point = (0, 0)
+        self.messageBoard.z_position = 100
         self.message = LabelNode(
-            '', position=(800, 225), font=('Helvetica', 50), parent=self)
+            '',
+            position=(0, 0),
+            color='#000000',
+            font=('Helvetica', 100),
+            parent=self.messageBoard)
+        self.message.anchor_point = (0, 0)
 
         self.scoreBoard = Node(position=(10, 750), parent=self)
         self.score = LabelNode('', parent=self.scoreBoard)
@@ -527,7 +538,7 @@ class MyScene(Scene):
             self.cardsOnTable.append(ctmp)
 
         # FIX only for the initial deal!
-        for i, subnode in enumerate(self.children):
+        for i, subnode in enumerate(self.children[self.numChildrenSetup:]):
             subnode.z_position = -i
 
         self.cardTouched = None
@@ -536,6 +547,7 @@ class MyScene(Scene):
         self.userCardsSelected = []
         self.showAllThenAbort = False
         self.message.text = ''
+        self.messageBoard.alpha = 0
         self.nextT = self.t + parm['DELAY']
         self.startTime = self.t
         self.lastScoreShowTime = self.t
@@ -606,7 +618,10 @@ class MyScene(Scene):
         self.deckLabel.text = checkDeck(self.deck)
         if (len(self.deck) == 0) & (len(findSets(self.deal)) == 0):
             # deck empty end game but cards left in deal
-            self.message.text = 'Game Over\n Auto Play'
+            self.message.text = ' Game Over \n Auto Play '
+            bb = self.message.bbox
+            self.rect.size = (bb[2], bb[3])
+            self.messageBoard.alpha = 1
             self.updateScore()
             self.startNextTouch = True
 
@@ -630,7 +645,10 @@ class MyScene(Scene):
                 if setSelected not in self.setsDisplayed:
                     break
             else:
-                self.message.text = 'All Sets Found'
+                self.message.text = ' All Sets Found '
+                bb = self.message.bbox
+                self.rect.size = (bb[2], bb[3])
+                self.messageBoard.alpha = 1
                 self.startNextTouch = True
                 return
                 bestSetData = []
@@ -711,6 +729,8 @@ class MyScene(Scene):
 
     def flashFace(self, img='emj:Smiling_2', dur=1):
         self.face.texture = Texture(img)
+        # TODO seems neccessary to set z_position each time
+        self.face.z_position = 10
         self.face.run_action(
             Action.sequence(
                 Action.group(
@@ -725,7 +745,7 @@ class MyScene(Scene):
         # make nice sound
         if parm['SOUND_ON']:
             play_effect('digital:PowerUp1')
-        else:
+        if parm['FACES']:
             self.flashFace('emj:Smiling_2')
 
         self.numCorrectSets += 1
@@ -802,7 +822,7 @@ class MyScene(Scene):
             if len(bestSet) == 3:
                 if parm['SOUND_ON']:
                     play_effect('game:Spaceship')
-                else:
+                if parm['FACES']:
                     self.flashFace('emj:Flushed')
                 self.numBadDeals += 1
             else:
@@ -810,7 +830,10 @@ class MyScene(Scene):
                 self.nextT = self.t + parm['DELAY']  # reset auto timer
                 if len(self.deck) == 0:
                     # deck empty end game
-                    self.message.text = 'Game Over'
+                    self.message.text = ' Game Over '
+                    bb = self.message.bbox
+                    self.rect.size = (bb[2], bb[3])
+                    self.messageBoard.alpha = 1
                     self.startNextTouch = True
                     return
                 self.newDeal()
@@ -847,7 +870,7 @@ class MyScene(Scene):
                             # not a set, make noise subtract penalty etc
                             if parm['SOUND_ON']:
                                 play_effect('game:Error')
-                            else:
+                            if parm['FACES']:
                                 self.flashFace('emj:Stuck-Out_Tongue_1')
                             self.buttonSet.fill_color = 'red'
                             # self.userCalledSet = False
@@ -865,7 +888,6 @@ class MyScene(Scene):
                             self.numBadSets += 1
                         elif parm['REMOVE']:
                             # found set, remove cards from deck
-                            self.processCorrectSet()
                             removeCardsInSet(
                                 [[c.color, c.number, c.shape, c.shade]
                                  for c in self.userCardsSelected], self.deal)
@@ -873,8 +895,7 @@ class MyScene(Scene):
                                 freePositions[c.posInd] = True
                                 self.cardsOnTable.remove(c)
                                 c.remove_from_parent()
-
-                            # self.userCardsSelected = []
+                            self.processCorrectSet()
                         else:
                             if set(self.userCardsSelected
                                    ) not in self.setsDisplayed:
@@ -883,7 +904,7 @@ class MyScene(Scene):
                             else:
                                 if parm['SOUND_ON']:
                                     play_effect('arcade:Jump_4')
-                                else:
+                                if parm['FACES']:
                                     self.flashFace('emj:Astonished')
                                 self.buttonSet.fill_color = 'red'
                             for c in self.userCardsSelected:
