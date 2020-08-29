@@ -6,6 +6,10 @@ from sound import *
 import console
 import itertools
 import json
+import time
+#import photos
+#assets = photos.pick_asset(title='Pick some assets', multi=False)
+#imgChosen = assets.get_ui_image()
 
 DEBUG_LEVEL = 0  # max level to show
 console.clear()
@@ -409,32 +413,32 @@ class MyScene(Scene):
         self.z_position = 100000
 
         self.buttonParmPopup = ShapeNode(
-            ui.Path.rect(0, 0, 50, 50),
-            position=(625, 25),
+            ui.Path.rounded_rect(0, 0, 60, 60, 12),
+            position=(975, 30),
             fill_color='green',
             parent=self)
 
         self.buttonAllAuto = ShapeNode(
-            ui.Path.rect(0, 0, 50, 50),
-            position=(325, 25),
+            ui.Path.rounded_rect(0, 0, 60, 60, 12),
+            position=(875, 30),
             fill_color='white',
             parent=self)
 
         self.buttonAuto = ShapeNode(
-            ui.Path.rect(0, 0, 50, 50),
-            position=(225, 25),
+            ui.Path.rounded_rect(0, 0, 60, 60, 12),
+            position=(775, 30),
             fill_color='orange',
             parent=self)
 
         self.buttonPile = ShapeNode(
-            ui.Path.rect(0, 0, 50, 50),
-            position=(125, 25),
+            ui.Path.rounded_rect(0, 0, 60, 60, 12),
+            position=(180, 30),
             fill_color='purple',
             parent=self)
 
         self.buttonSet = ShapeNode(
-            ui.Path.rect(0, 0, 50, 50),
-            position=(25, 25),
+            ui.Path.rounded_rect(0, 0, 60, 60, 12),
+            position=(60, 30),
             fill_color='red',
             parent=self)
 
@@ -495,6 +499,7 @@ class MyScene(Scene):
 
         self.numCorrectSets = 0
         self.numBadSets = 0
+        self.numAbortSetCall = 0
         self.numCorrectDeals = 0
         self.numBadDeals = 0
         self.numAutoSets = 0
@@ -731,14 +736,21 @@ class MyScene(Scene):
         self.face.texture = Texture(img)
         # TODO seems neccessary to set z_position each time
         self.face.z_position = 10
+        sc = 1  #.05
         self.face.run_action(
             Action.sequence(
                 Action.group(
+                    Action.fade_to(0, 0),
+                    Action.scale_x_to(sc * 1, 0), Action.scale_y_to(sc * 1,
+                                                                    0)),
+                Action.group(
                     Action.fade_to(1, dur),
-                    Action.scale_x_to(5, dur), Action.scale_y_to(5, dur)),
+                    Action.scale_x_to(sc * 5, dur),
+                    Action.scale_y_to(sc * 5, dur)),
                 Action.group(
                     Action.fade_to(0, dur),
-                    Action.scale_x_to(1, dur), Action.scale_y_to(1, dur))))
+                    Action.scale_x_to(sc * 1, dur),
+                    Action.scale_y_to(sc * 1, dur))))
 
     def processCorrectSet(self):
         self.nextT = self.t + parm['DELAY']  # reset auto timer
@@ -749,15 +761,20 @@ class MyScene(Scene):
             self.flashFace('emj:Smiling_2')
 
         self.numCorrectSets += 1
-        self.buttonSet.fill_color = 'green'
+        self.buttonSet.fill_color = 'red'
         self.dispFound(self.userCardsSelected)
         self.dealLabel.text = checkDeck(self.deal)
 
     def updateScore(self):
-        self.score.text = "{} Correct Set Calls, {} Incorrect, {} Good Deals, {} Premature, {} Auto Sets, {} Auto Deals, {} Time".format(
-            self.numCorrectSets, self.numBadSets, self.numCorrectDeals,
-            self.numBadDeals, self.numAutoSets, self.numAutoDeals,
-            int(self.t - self.startTime))
+        ts = time.gmtime(int(self.t - self.startTime))
+        if ts.tm_hour == 0:
+            tstr = time.strftime("%M:%S", ts)
+        else:
+            tstr = time.strftime("%H:%M:%S", ts)
+        self.score.text = "Set Calls: {} Correct, {} Incorrect, {} Aborted, Deals: {} Good, {} Premature, Auto: {} Sets, {} Deals, Time {}".format(
+            self.numCorrectSets, self.numBadSets, self.numAbortSetCall,
+            self.numCorrectDeals, self.numBadDeals, self.numAutoSets,
+            self.numAutoDeals, tstr)
 
     def update(self):
         if self.t > self.lastScoreShowTime and not self.startNextTouch:
@@ -805,9 +822,21 @@ class MyScene(Scene):
 
         # touched found set button
         if touch.location in self.buttonSet.frame:
-            self.buttonSet.fill_color = 'yellow'
-            self.userCalledSet = True
-            #return
+            if not self.userCalledSet:  # player signals found set 
+                self.buttonSet.fill_color = 'yellow'
+                self.userCalledSet = True
+            else:  # player oops and aborts selecting cards
+                if parm['SOUND_ON']:
+                    play_effect('arcade:Jump_5')
+                if parm['FACES']:
+                    self.flashFace('emj:Relieved')
+                self.buttonSet.fill_color = 'red'
+                self.numAbortSetCall += 1
+                for c in self.userCardsSelected:
+                    c.run_action(Action.scale_x_to(1))
+                self.userCardsSelected = []
+                self.userCalledSet = False
+                self.buttonSet.fill_color = 'red'
 
         # touched change settings button
         if touch.location in self.buttonParmPopup.frame:
@@ -872,6 +901,7 @@ class MyScene(Scene):
                                 play_effect('game:Error')
                             if parm['FACES']:
                                 self.flashFace('emj:Stuck-Out_Tongue_1')
+                                # self.flashFace(imgChosen)
                             self.buttonSet.fill_color = 'red'
                             # self.userCalledSet = False
                             for c in self.userCardsSelected:
