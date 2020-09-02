@@ -43,19 +43,19 @@
         "nodes" : [
 
         ],
-        "frame" : "{{243, 30}, {276, 31}}",
+        "frame" : "{{274, 32}, {300, 29}}",
         "class" : "SegmentedControl",
         "attributes" : {
           "action" : "input_action",
           "flex" : "LR",
-          "segments" : "Color|Number|Shape|Shade",
+          "segments" : "Random|Color|Number|Shape|Shade",
           "frame" : "{{100, 146}, {120, 29}}",
           "uuid" : "BF882477-D30C-4FE9-B79B-4F00C1D161E0",
           "class" : "SegmentedControl",
           "border_color" : "RGBA(1.000000,1.000000,0.200000,1.000000)",
           "name" : "PROPERTY"
         },
-        "selected" : false
+        "selected" : true
       },
       {
         "nodes" : [
@@ -64,14 +64,14 @@
         "frame" : "{{33, 399}, {200, 32}}",
         "class" : "TextField",
         "attributes" : {
-          "name" : "delay_text",
+          "font_size" : 17,
           "frame" : "{{60, 144}, {200, 32}}",
           "spellchecking_type" : "default",
           "class" : "TextField",
           "uuid" : "A13E3CC4-D629-435E-BE7C-B98DE54FC6A1",
           "alignment" : "left",
           "autocorrection_type" : "default",
-          "font_size" : 17,
+          "name" : "delay_text",
           "font_name" : "<System>"
         },
         "selected" : false
@@ -83,13 +83,13 @@
         "frame" : "{{47, 46}, {39, 31}}",
         "class" : "Label",
         "attributes" : {
-          "name" : "label1",
+          "font_size" : 18,
           "frame" : "{{85, 144}, {150, 32}}",
           "uuid" : "9D60FD16-7BC7-4F79-B530-82A367BFE5CF",
           "class" : "Label",
           "alignment" : "left",
           "text" : "Full",
-          "font_size" : 18,
+          "name" : "label1",
           "font_name" : "<System>"
         },
         "selected" : false
@@ -107,8 +107,8 @@
           "class" : "Label",
           "alignment" : "left",
           "text" : "Easy",
-          "name" : "label1b",
-          "font_size" : 18
+          "font_size" : 18,
+          "name" : "label1b"
         },
         "selected" : false
       },
@@ -121,13 +121,13 @@
         "attributes" : {
           "action" : "input_action",
           "font_size" : 18,
-          "uuid" : "F611AD63-6E7C-42B1-B354-7EB0EE11AD67",
+          "background_color" : "RGBA(0.233333,1.000000,0.233333,1.000000)",
           "frame" : "{{135, 145}, {51, 31}}",
+          "uuid" : "F611AD63-6E7C-42B1-B354-7EB0EE11AD67",
           "class" : "Switch",
           "text" : "Full",
           "value" : true,
           "alignment" : "left",
-          "background_color" : "RGBA(0.233333,1.000000,0.233333,1.000000)",
           "name" : "REMOVE",
           "font_name" : "<System>"
         },
@@ -140,13 +140,13 @@
         "frame" : "{{175, 111}, {74, 31}}",
         "class" : "Label",
         "attributes" : {
-          "name" : "label2",
+          "font_size" : 18,
           "frame" : "{{85, 144}, {150, 32}}",
           "uuid" : "E6B3FDE7-F873-4FBC-B8E6-E6BA4E47B062",
           "class" : "Label",
           "alignment" : "left",
           "text" : "Remove ",
-          "font_size" : 18,
+          "name" : "label2",
           "font_name" : "<System>"
         },
         "selected" : false
@@ -158,13 +158,13 @@
         "frame" : "{{48, 111}, {55, 31}}",
         "class" : "Label",
         "attributes" : {
-          "name" : "label3",
+          "font_size" : 18,
           "frame" : "{{85, 144}, {150, 32}}",
           "uuid" : "ADDBABCD-36ED-4AC9-9173-3EB3048D2C45",
           "class" : "Label",
           "alignment" : "left",
           "text" : "Keep",
-          "font_size" : 18,
+          "name" : "label3",
           "font_name" : "<System>"
         },
         "selected" : false
@@ -183,8 +183,8 @@
           "uuid" : "A13E3CC4-D629-435E-BE7C-B98DE54FC6A1",
           "alignment" : "left",
           "autocorrection_type" : "default",
-          "name" : "deal_text",
-          "font_size" : 17
+          "font_size" : 17,
+          "name" : "deal_text"
         },
         "selected" : false
       },
@@ -213,12 +213,12 @@
         "nodes" : [
 
         ],
-        "frame" : "{{314, 69}, {120, 29}}",
+        "frame" : "{{274, 69}, {300, 29}}",
         "class" : "SegmentedControl",
         "attributes" : {
           "action" : "input_action",
           "flex" : "LR",
-          "segments" : "1|2|3",
+          "segments" : "Random|1|2|3",
           "frame" : "{{234, 225}, {120, 29}}",
           "uuid" : "4EBE4F9D-37D0-49D6-8231-249DFFDA3A72",
           "class" : "SegmentedControl",
@@ -254,14 +254,14 @@
         "frame" : "{{326, 266}, {200, 32}}",
         "class" : "TextField",
         "attributes" : {
-          "font_size" : 17,
+          "name" : "startdeal_text",
           "frame" : "{{60, 144}, {200, 32}}",
           "spellchecking_type" : "default",
           "class" : "TextField",
           "uuid" : "A13E3CC4-D629-435E-BE7C-B98DE54FC6A1",
           "alignment" : "left",
           "autocorrection_type" : "default",
-          "name" : "startdeal_text",
+          "font_size" : 17,
           "font_name" : "<System>"
         },
         "selected" : false
@@ -290,13 +290,13 @@
         "frame" : "{{48, 175}, {55, 31}}",
         "class" : "Label",
         "attributes" : {
-          "name" : "label4",
+          "font_size" : 18,
           "frame" : "{{219, 224}, {150, 32}}",
           "uuid" : "8C47DF72-D14C-461B-94C4-591C9BBFBEF5",
           "class" : "Label",
           "alignment" : "left",
           "text" : "Deal",
-          "font_size" : 18,
+          "name" : "label4",
           "font_name" : "<System>"
         },
         "selected" : false
@@ -308,13 +308,13 @@
         "frame" : "{{175, 175}, {74, 31}}",
         "class" : "Label",
         "attributes" : {
-          "name" : "label5",
+          "font_size" : 18,
           "frame" : "{{219, 224}, {150, 32}}",
           "uuid" : "D02AF6E8-19C1-4B06-AA89-065B43CC12AB",
           "class" : "Label",
           "alignment" : "left",
           "text" : "Fill",
-          "font_size" : 18,
+          "name" : "label5",
           "font_name" : "<System>"
         },
         "selected" : false
@@ -342,13 +342,13 @@
         "frame" : "{{456, 175}, {95, 31}}",
         "class" : "Label",
         "attributes" : {
-          "font_size" : 18,
+          "name" : "label6",
           "frame" : "{{219, 224}, {150, 32}}",
           "uuid" : "CD3C5147-1980-40E8-B54F-C4BA9DD2DE14",
           "class" : "Label",
           "alignment" : "left",
           "text" : "Sound",
-          "name" : "label6",
+          "font_size" : 18,
           "font_name" : "<System>"
         },
         "selected" : false
@@ -376,13 +376,13 @@
         "frame" : "{{456, 213}, {95, 32}}",
         "class" : "Label",
         "attributes" : {
-          "name" : "label7",
+          "font_size" : 18,
           "frame" : "{{219, 224}, {150, 32}}",
           "uuid" : "F31F085C-0360-4D3C-9F13-CBF6A996D4AB",
           "class" : "Label",
           "alignment" : "left",
           "text" : "Faces",
-          "font_size" : 18,
+          "name" : "label7",
           "font_name" : "<System>"
         },
         "selected" : false
@@ -391,11 +391,11 @@
     "frame" : "{{0, 0}, {588, 479}}",
     "class" : "View",
     "attributes" : {
-      "background_color" : "RGBA(0.766667,1.000000,0.766667,1.000000)",
+      "name" : "",
       "enabled" : true,
+      "background_color" : "RGBA(0.766667,1.000000,0.766667,1.000000)",
       "tint_color" : "RGBA(0.000000,0.478000,1.000000,1.000000)",
       "border_color" : "RGBA(0.000000,0.000000,0.000000,1.000000)",
-      "name" : "",
       "flex" : ""
     },
     "selected" : false

@@ -31,10 +31,10 @@ parm = dict(  # of all parameters that can be specified in the gui
     EASY=True,
     FILL=True,
     REMOVE=False,
-    PROPERTY='Shade',
-    PROPERTY_idx=3,
-    ATTRIBUTE='2',
-    ATTRIBUTE_idx=1)
+    PROPERTY='Random',
+    PROPERTY_idx=0,
+    ATTRIBUTE='Random',
+    ATTRIBUTE_idx=0)
 
 paramnames = [
     'SOUND_ON', 'FACES', 'DELAY', 'DEAL', 'STARTDEAL', 'EASY', 'FILL',
@@ -60,7 +60,7 @@ class parmShift(dict):
 
 
 sfac = parmScale()
-sfac['DELAY'] = 29
+sfac['DELAY'] = 119
 sfac['DEAL'] = 6
 sfac['STARTDEAL'] = 15
 
@@ -518,13 +518,22 @@ class MyScene(Scene):
         # make backend deck
         if parm['EASY']:
             attNum = parm['ATTRIBUTE_idx']
-            if parm['PROPERTY'] == 'Color':
+            if attNum == 0:
+                attNum = random.randrange(3)
+            else:
+                attNum -= 1
+
+            propertyFixed = parm['PROPERTY']
+            if propertyFixed == 'Random':
+                propertyFixed = random.choice(
+                    ['Color', 'Number', 'Shape', 'Shade'])
+            if propertyFixed == 'Color':
                 self.deck = makeDeck(colorSlice=(attNum, attNum + 1, 1))
-            elif parm['PROPERTY'] == 'Number':
+            elif propertyFixed == 'Number':
                 self.deck = makeDeck(numberSlice=(attNum, attNum + 1, 1))
-            elif parm['PROPERTY'] == 'Shape':
+            elif propertyFixed == 'Shape':
                 self.deck = makeDeck(shapeSlice=(attNum, attNum + 1, 1))
-            elif parm['PROPERTY'] == 'Shade':
+            elif propertyFixed == 'Shade':
                 self.deck = makeDeck(shadeSlice=(attNum, attNum + 1, 1))
         else:
             self.deck = makeDeck()
@@ -791,7 +800,7 @@ class MyScene(Scene):
             self.updateScore()
             return
 
-        if parm['DELAY'] >= 31 or self.startNextTouch:
+        if parm['DELAY'] >= 121 or self.startNextTouch:
             self.timerBar.alpha = 0
             return
 
