@@ -7,12 +7,37 @@ import console
 import itertools
 import json
 import time
-#import photos
-#assets = photos.pick_asset(title='Pick some assets', multi=False)
-#imgChosen = assets.get_ui_image()
+import photos
+
+console.clear()
+
+# Get images drawn by Iris in photo album 'SetImages'
+for album in photos.get_albums():
+    if album.title == 'SetImages':
+        try:
+            scaleFaces = .05
+            imgBadChoice = album.assets[0].get_ui_image()
+            imgAlreadyChosen = album.assets[1].get_ui_image()
+            imgBadDealRequest = album.assets[2].get_ui_image()
+            imgCorrectSet = album.assets[3].get_ui_image()
+            imgOops = album.assets[1].get_ui_image()
+            #            imgBadChoice = album.assets[0].get_ui_image(size=(120, 120), crop=False)
+            #            imgAlreadyChosen = album.assets[1].get_ui_image(size=(120, 120), crop=False)
+            #            imgBadDealRequest = album.assets[2].get_ui_image(size=(120, 120), crop=False)
+            #            imgCorrectSet = album.assets[3].get_ui_image(size=(120, 120), crop=True)
+
+            break
+        except:
+            pass
+else:  # if no album 'SetImages' or not contains all images default to these
+    scaleFaces = 1
+    imgBadChoice = 'emj:Stuck-Out_Tongue_1'
+    imgAlreadyChosen = 'emj:Astonished'
+    imgBadDealRequest = 'emj:Flushed'
+    imgCorrectSet = 'emj:Smiling_2'
+    imgOops = 'emj:Relieved'
 
 DEBUG_LEVEL = 0  # max level to show
-console.clear()
 print('DEBUG LEVEL ', DEBUG_LEVEL)
 
 
@@ -410,7 +435,7 @@ class MyScene(Scene):
         self.face = SpriteNode(
             'emj:Smiling_2', position=(500, 350), parent=self)
         self.face.alpha = 0
-        self.z_position = 100000
+        self.face.z_position = 100000
 
         self.buttonParmPopup = ShapeNode(
             ui.Path.rounded_rect(0, 0, 60, 60, 12),
@@ -743,9 +768,7 @@ class MyScene(Scene):
 
     def flashFace(self, img='emj:Smiling_2', dur=1):
         self.face.texture = Texture(img)
-        # TODO seems neccessary to set z_position each time
-        self.face.z_position = 10
-        sc = 1  #.05
+        sc = scaleFaces
         self.face.run_action(
             Action.sequence(
                 Action.group(
@@ -753,7 +776,7 @@ class MyScene(Scene):
                     Action.scale_x_to(sc * 1, 0), Action.scale_y_to(sc * 1,
                                                                     0)),
                 Action.group(
-                    Action.fade_to(1, dur),
+                    Action.fade_to(1, dur / 2),
                     Action.scale_x_to(sc * 5, dur),
                     Action.scale_y_to(sc * 5, dur)),
                 Action.group(
@@ -767,7 +790,7 @@ class MyScene(Scene):
         if parm['SOUND_ON']:
             play_effect('digital:PowerUp1')
         if parm['FACES']:
-            self.flashFace('emj:Smiling_2')
+            self.flashFace(imgCorrectSet)
 
         self.numCorrectSets += 1
         self.buttonSet.fill_color = 'red'
@@ -838,7 +861,7 @@ class MyScene(Scene):
                 if parm['SOUND_ON']:
                     play_effect('arcade:Jump_5')
                 if parm['FACES']:
-                    self.flashFace('emj:Relieved')
+                    self.flashFace(imgOops)
                 self.buttonSet.fill_color = 'red'
                 self.numAbortSetCall += 1
                 for c in self.userCardsSelected:
@@ -861,7 +884,7 @@ class MyScene(Scene):
                 if parm['SOUND_ON']:
                     play_effect('game:Spaceship')
                 if parm['FACES']:
-                    self.flashFace('emj:Flushed')
+                    self.flashFace(imgBadDealRequest)
                 self.numBadDeals += 1
             else:
                 # correct request
@@ -909,8 +932,7 @@ class MyScene(Scene):
                             if parm['SOUND_ON']:
                                 play_effect('game:Error')
                             if parm['FACES']:
-                                self.flashFace('emj:Stuck-Out_Tongue_1')
-                                # self.flashFace(imgChosen)
+                                self.flashFace(imgBadChoice)
                             self.buttonSet.fill_color = 'red'
                             # self.userCalledSet = False
                             for c in self.userCardsSelected:
@@ -944,7 +966,7 @@ class MyScene(Scene):
                                 if parm['SOUND_ON']:
                                     play_effect('arcade:Jump_4')
                                 if parm['FACES']:
-                                    self.flashFace('emj:Astonished')
+                                    self.flashFace(imgAlreadyChosen)
                                 self.buttonSet.fill_color = 'red'
                             for c in self.userCardsSelected:
                                 # c.remove_all_actions()
