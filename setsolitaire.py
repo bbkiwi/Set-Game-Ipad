@@ -133,7 +133,7 @@ def makeDeck(colorSlice=(0, 3, 1),
              shapeSlice=(0, 3, 1),
              shadeSlice=(0, 3, 1)):
     # card has 4 properties each with 3 states
-    # eg color (r,g,b), number (1,2,3), shape (circle, square, sqiggle), shading (open, striped, solid) and
+    # eg color (r,g,b), number (1,2,3), shape (oval, diamond, squiggles), shading (open, solid, stripe)
     deck = []
     for color in itertools.islice(['red', 'green', 'blue'], *colorSlice):
         for number in itertools.islice(range(1, 4), *numberSlice):
@@ -181,7 +181,6 @@ def makeDeal(deck):
     for i in range(parm['STARTDEAL']):
         deal.append(dealCard(deck))
     return deal
-
 
 def printDeck(deck):
     for i, card in enumerate(deck):
@@ -369,7 +368,19 @@ freePositions = [True] * len(posPositions)
 
 
 class Card(Node):
-    def __init__(self, x, y, color, number, shape, shade, *args, **kwargs):
+    def __init__(
+            self,
+            x,
+            y,
+            color,
+            number,
+            shape,
+            shade,
+            outerColor=(
+                1, 1,
+                1),  # could be 5th property yellow, magenta, cyan background
+            *args,
+            **kwargs):
         # is next needed, doesnt seem to make difference
         Node.__init__(self, *args, **kwargs)
 
@@ -393,6 +404,7 @@ class Card(Node):
         self.number = number
         self.shape = shape
         self.shade = shade
+        self.outerColor = outerColor
         # print(x,y,color,number,shape,shade)
         shadings = {
             'solid': color,
@@ -403,7 +415,6 @@ class Card(Node):
         shading.stroke_color = color
         outline = ShapeNode(path=outlinePath, *args, **kwargs)
         # outline.z_position = 0
-
         outline.fill_color = shadings[shade]
 
         # print(outline.fill_color)
@@ -415,7 +426,7 @@ class Card(Node):
         self.cardShape = ShapeNode(
             path=cardShapes[shape][number - 1], *args, **kwargs)
         self.cardShape.stroke_color = color
-        self.cardShape.fill_color = 'white'  #'#fbff9b'
+        self.cardShape.fill_color = outerColor
         # cardShape.remove_from_parent()
         # outline.remove_from_parent()
 
@@ -518,7 +529,7 @@ class MyScene(Scene):
             freePositions[node.posInd] = True
             node.remove_from_parent()
 
-        # clear out self.setsFound   
+        # clear out self.setsFound
         for child in self.setsFound.children:
             child.remove_from_parent()
 
@@ -563,7 +574,7 @@ class MyScene(Scene):
         else:
             self.deck = makeDeck()
 
-        # make backend initial deal   
+        # make backend initial deal
         self.deal = makeDeal(self.deck)
         # print(self.deal)
         self.deckLabel.text = checkDeck(self.deck)
@@ -751,7 +762,10 @@ class MyScene(Scene):
             ctmp = Card(*self.setsFound.point_from_scene(card.position),
                         card.color, card.number, card.shape, card.shade)
             if auto:
-                ctmp.cardShape.fill_color = '#000000'
+                sc = 0.8
+                ctmp.cardShape.fill_color = (sc * ctmp.outerColor[0],
+                                             sc * ctmp.outerColor[1],
+                                             sc * ctmp.outerColor[2])
             self.setsFound.add_child(ctmp)
             ctmp.run_action(
                 Action.sequence(
@@ -854,7 +868,7 @@ class MyScene(Scene):
 
         # touched found set button
         if touch.location in self.buttonSet.frame:
-            if not self.userCalledSet:  # player signals found set 
+            if not self.userCalledSet:  # player signals found set
                 self.buttonSet.fill_color = 'yellow'
                 self.userCalledSet = True
             else:  # player oops and aborts selecting cards
@@ -894,7 +908,7 @@ class MyScene(Scene):
                     self.message.text = ' Game Over '
                     bb = self.message.bbox
                     self.rect.size = (bb[2], bb[3])
-                    self.messageBoard.alpha = 1
+                    self.messageBoard.alpha = 0.5
                     self.startNextTouch = True
                     return
                 self.newDeal()
@@ -957,6 +971,14 @@ class MyScene(Scene):
                                 self.cardsOnTable.remove(c)
                                 c.remove_from_parent()
                             self.processCorrectSet()
+                            if len(self.deal) == 0:
+                                # no cards left in deal
+                                self.message.text = ' Game Over '
+                                bb = self.message.bbox
+                                self.rect.size = (bb[2], bb[3])
+                                self.messageBoard.alpha = 1
+                                self.startNextTouch = True
+                                #return
                         else:
                             if set(self.userCardsSelected
                                    ) not in self.setsDisplayed:
