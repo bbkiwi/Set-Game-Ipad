@@ -28,7 +28,7 @@ if iphone:
     buttonXpos = dict(zip(['parm', 'allauto', 'auto','pile', 'set'], [975, 900, 825, 750, 675]))
     timeBarX = 1100
     timeBarHt = 600
-    
+
 else:
     size_ratio = 1 # for ipad
     topDeal = 650 #for ipad
@@ -38,7 +38,7 @@ else:
     buttonXpos = dict(zip(['parm', 'allauto', 'auto','pile', 'set'], [975, 875, 775, 180, 60]))
     timeBarX = 1020
     timeBarHt = 700
-    
+
 
 
 # Get images drawn by Iris in photo album 'SetImages'
@@ -67,7 +67,7 @@ else:  # if no album 'SetImages' or not contains all images default to these
     imgCorrectSet = 'emj:Smiling_2'
     imgOops = 'emj:Relieved'
 
-DEBUG_LEVEL = 0 # max level to show
+DEBUG_LEVEL = 0  # max level to show
 print('DEBUG LEVEL ', DEBUG_LEVEL)
 
 
@@ -279,7 +279,6 @@ def findBestSet(deal, deck):
 width = 120
 height = 180
 
-
 shadingPath = ui.Path.rect(10, 10, width - 20, height - 20)
 for x in range(3, 38):
     shadingPath.move_to(3 * x, 10)
@@ -486,7 +485,7 @@ class MyScene(Scene):
             'emj:Smiling_2', position=(500, 350), parent=self)
         self.face.alpha = 0
         self.face.z_position = 100000
-        
+
         self.buttonParmPopup = ShapeNode(
             ui.Path.rounded_rect(0, 0, 60, 60, 12),
             position=(buttonXpos['parm'], 30),
@@ -530,7 +529,7 @@ class MyScene(Scene):
             font=('Helvetica', 100),
             parent=self.messageBoard)
         self.message.anchor_point = (0, 0)
-        
+
         self.scoreBoard = Node(position=(10, iphadj+50), parent=self)
         self.score = LabelNode('', parent=self.scoreBoard)
         self.score.anchor_point = (0, 5)
@@ -568,7 +567,7 @@ class MyScene(Scene):
             freePositions[node.posInd] = True
             node.remove_from_parent()
 
-        # clear out self.setsFound   
+        # clear out self.setsFound
         for child in self.setsFound.children:
             child.remove_from_parent()
 
@@ -582,9 +581,9 @@ class MyScene(Scene):
 
         ws = ui.get_window_size()
         self.xDisp = self.xDispCol = 799
-        
+
         self.yDisp = -150
-        
+
         #print(ws, self.xDispCol,self.xDisp,self.yDisp)
 
         self.startNextTouch = False
@@ -616,7 +615,7 @@ class MyScene(Scene):
         else:
             self.deck = makeDeck()
 
-        # make backend initial deal   
+        # make backend initial deal
         self.deal = makeDeal(self.deck)
         # print(self.deal)
         self.deckLabel.text = checkDeck(self.deck)
@@ -817,7 +816,7 @@ class MyScene(Scene):
                         dispFoundAdj, actionTime,
                                        TIMING_EASE_IN))))
             self.xDisp += .2 * width
-        
+
         self.yDisp -= 0.2 * height + 2
         if self.yDisp <= -3 * (height + 2) - dispFoundAdj2:
             self.xDispCol += 5 + 3 * 0.2 * width
@@ -912,7 +911,7 @@ class MyScene(Scene):
 
         # touched found set button
         if touch.location in self.buttonSet.frame:
-            if not self.userCalledSet:  # player signals found set 
+            if not self.userCalledSet:  # player signals found set
                 self.buttonSet.fill_color = 'yellow'
                 self.userCalledSet = True
             else:  # player oops and aborts selecting cards

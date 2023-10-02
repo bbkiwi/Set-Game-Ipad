@@ -168,7 +168,7 @@ def makeCap20Deal(deck, coorOnly=False):
         deal.append(card)
         deck.remove(card)
     return deal
-        
+
 def make21Deal(deck, coorOnly=False):
     cap2 = [[2,1,1,2],[2,2,1,2],[2,3,3,2],[3,3,3,3],[3,3,3,1],[3,1,1,3],[3,2,1,3],[1,3,3,2],[3,2,3,2],[3,1,3,2],[3,1,1,2],[3,2,1,2],[1,3,2,3],[2,2,2,3],[2,1,2,3],[2,1,1,3],[2,2,1,3],[2,3,2,2],[3,3,2,3],[2,3,2,1],[1,3,1,1]]
     color = ['red', 'green', 'blue']
@@ -183,7 +183,7 @@ def make21Deal(deck, coorOnly=False):
         deal.append(card)
         deck.remove(card)
     return deal
-        
+
 def checkDeck(deck):
     colorCnt = dict(zip(['red', 'green', 'blue'], [0, 0, 0]))
     numberCnt = dict(zip([1, 2, 3], [0, 0, 0]))
@@ -223,7 +223,7 @@ def makeDeal(deck, N=None):
     for i in range(N):
         deal.append(dealCard(deck))
     return deal
-    
+
 def printDeck(deck):
     for i, card in enumerate(deck):
         print(i, card)
@@ -611,7 +611,7 @@ class MyScene(Scene):
             freePositions[node.posInd] = True
             node.remove_from_parent()
 
-        # clear out self.setsFound   
+        # clear out self.setsFound
         for child in self.setsFound.children:
             child.remove_from_parent()
 
@@ -633,7 +633,7 @@ class MyScene(Scene):
         self.setAutoFound = []
         self.cardsLeft = []
         self.setsDisplayed = []
-        
+
         self.cardTouched = None
         self.buttonTouchId = None
         self.userCalledSet = False
@@ -668,9 +668,9 @@ class MyScene(Scene):
         else:
             self.deck = makeDeck()
 
-        
-        
-        # make backend initial deal 
+
+
+        # make backend initial deal
         #self.deal = makeDeal(self.deck)
         # this deal adds the one special card to a maximal capset which tgen has 10 sets
         # all other cards when added give 3 sets
@@ -966,7 +966,7 @@ class MyScene(Scene):
 
         # touched found set button
         if touch.location in self.buttonSet.frame:
-            if not self.userCalledSet:  # player signals found set 
+            if not self.userCalledSet:  # player signals found set
                 self.buttonSet.fill_color = 'yellow'
                 self.userCalledSet = True
             else:  # player oops and aborts selecting cards
