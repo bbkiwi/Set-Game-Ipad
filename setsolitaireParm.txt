@@ -1,0 +1,1 @@
+{"SOUND_ON": 1, "FACES": 1, "DELAY": 121, "DEAL": 7, "STARTDEAL": 18, "EASY": 0, "FILL": 1, "REMOVE": 0, "PROPERTY": "Shade", "PROPERTY_idx": 4, "ATTRIBUTE": "3", "ATTRIBUTE_idx": 3}
